@@ -1,0 +1,55 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+    compileSdk 37
+    ndkVersion '30.0.14904198'
+    namespace 'com.android.webgpu'
+    defaultConfig {
+        applicationId 'com.android.webgpu'
+        minSdkVersion 24
+        targetSdkVersion 37
+        versionCode 1
+        versionName '1.0'
+
+        ndk {
+            abiFilters 'x86_64', 'arm64-v8a'
+
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.30.3"
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+    sourceSets {
+        main {
+            assets {
+                srcDirs 'src\\main\\assets'
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.14.0'
+}
