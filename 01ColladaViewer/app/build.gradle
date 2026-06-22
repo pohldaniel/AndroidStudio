@@ -10,9 +10,9 @@ android {
     }
     compileSdk 37
     ndkVersion '30.0.14904198'
-    namespace 'com.android.dragon'
+    namespace 'com.android.collada'
     defaultConfig {
-        applicationId 'com.android.dragon'
+        applicationId 'com.android.collada'
         minSdkVersion 24
         targetSdkVersion 37
         versionCode 1

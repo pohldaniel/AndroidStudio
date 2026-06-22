@@ -16,10 +16,8 @@
 
 #include "core/Camera.h"
 #include "core/Shader.h"
-#include "MeshCube.h"
 #include "Animation/AnimatedModel/AnimatedModel.h"
 #include "DeltaClock.h"
-
 
 Camera camera;
 AnimatedModel dragon;
@@ -33,11 +31,11 @@ bool setupGraphics(int width, int height, AAssetManager* assetManager){
     glEnable(GL_CULL_FACE);
     glViewport(0, 0, width, height);
 
-    Vector3f camPos{ 0, 0, 25.0f };Vector3f target(0.0, 0.0, 0.0);Vector3f up(0.0, 1.0, 0.0);
+    Vector3f camPos{ 0, 5, 25.0f };Vector3f target(0.0, 5.0, 0.0);Vector3f up(0.0, 1.0, 0.0);
     camera = Camera(camPos, target, up);
     camera.perspective(25.0f, (GLfloat)width / (GLfloat)height, 1.0f, 2000.0f);
 
-    dragon.loadModel("dragon.dae", "dragon.png", assetManager);
+    dragon.loadModel("cowboy.dae", "cowboy.png", assetManager);
     dragon.getAnimator()->startAnimation("");
 
     mFrameClock.SetMaxDelta(0.05f);
@@ -56,10 +54,10 @@ void renderFrame(){
     dragon.draw(camera);
 }
 
-extern "C" JNIEXPORT void JNICALL Java_com_android_dragon_NativeLibrary_init(JNIEnv * env, jclass clazz,  jint width, jint height, jobject _assetManager){
-    setupGraphics(width, height, AAssetManager_fromJava(env, _assetManager));
+extern "C" JNIEXPORT void JNICALL Java_com_android_collada_NativeLibrary_init(JNIEnv * env, jclass clazz,  jint width, jint height, jobject assetManager){
+    setupGraphics(width, height, AAssetManager_fromJava(env, assetManager));
 }
 
-extern "C" JNIEXPORT void JNICALL Java_com_android_dragon_NativeLibrary_step( JNIEnv * env, jclass obj){
+extern "C" JNIEXPORT void JNICALL Java_com_android_collada_NativeLibrary_step(JNIEnv * env, jclass clazz){
     renderFrame();
 }

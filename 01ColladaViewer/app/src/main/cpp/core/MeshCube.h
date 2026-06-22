@@ -8,11 +8,11 @@
 #include <vector>
 #include <memory>
 
-#include "core/Camera.h"
-#include "core/Shader.h"
-#include "core/Vector.h"
-#include "core/ModelMatrix.h"
-#include "core/Texture.h"
+#include "Camera.h"
+#include "Shader.h"
+#include "Vector.h"
+#include "ModelMatrix.h"
+#include "Texture.h"
 
 class MeshCube {
 

@@ -1,4 +1,4 @@
-package com.android.dragon;
+package com.android.collada;
 
 import android.content.res.AssetManager;
 import android.opengl.GLSurfaceView;

@@ -1,11 +1,11 @@
-package com.android.dragon;
+package com.android.collada;
 
 import android.content.res.AssetManager;
 
 public class NativeLibrary {
 
     static {
-        System.loadLibrary("dragon");
+        System.loadLibrary("native");
     }
 
     public static native void init(int width, int height, AssetManager assetManager);

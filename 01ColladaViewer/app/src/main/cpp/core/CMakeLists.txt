@@ -8,4 +8,4 @@ set(CORE_SOURCES MeshCube.cpp Vector.cpp Camera.cpp ModelMatrix.cpp Texture.cpp 
 add_library(core STATIC ${CORE_SOURCES})
 
 set(CORE_HEADERS MeshCube.h Vector.h Camera.h ModelMatrix.h Texture.h Shader.h)
-target_include_directories(core PRIVATE ${CORE_N_HEADERS})
+target_include_directories(core PRIVATE ${CORE_HEADERS})

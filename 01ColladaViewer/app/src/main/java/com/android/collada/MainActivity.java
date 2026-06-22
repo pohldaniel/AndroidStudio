@@ -1,4 +1,4 @@
-package com.android.dragon;
+package com.android.collada;
 
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
