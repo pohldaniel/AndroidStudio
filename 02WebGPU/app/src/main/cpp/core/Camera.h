@@ -1,61 +1,81 @@
-#ifndef __cameraH__
-#define __cameraH__
+#pragma once
 
-#include "Vector.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
 
-class Camera{
+class Camera {
 
 public:
 
-    Camera();
-    Camera(const Vector3f &eye, const Vector3f &target, const Vector3f &up);
-    ~Camera();
+	static const glm::mat4 BIAS_SHIFT_Z;
+	static const glm::mat4 BIAS;
+
+	Camera();
+	Camera(const glm::vec3& eye, const glm::vec3& target, const glm::vec3& up);
+	~Camera();
+
     void perspective(float fovx, float aspect, float znear, float zfar);
-    void orthographic(float left, float right, float bottom, float top, float znear, float zfar);
-    void lookAt(const Vector3f &eye, const Vector3f &target, const Vector3f &up);
-    void move(float dx, float dy, float dz);
-    void rotate(float pitch, float yaw, float roll);
+	void orthographic(float left, float right, float bottom, float top, float znear, float zfar);
+	void lookAt(const glm::vec3& eye, const glm::vec3& target, const glm::vec3& up);
+	void lookAt(float distance, float pitch, float yaw);
+	void lookAt(float distance, float pitch, float yaw, float roll);
+	
+	void move(const glm::vec3& direction);
+	void move(float distance);
 
-    const Matrix4f &getViewMatrix() const;
-    const Matrix4f &getInvViewMatrix() const;
-    const Matrix4f &getProjectionMatrix() const;
-    const Matrix4f &getInvProjectionMatrix() const;
-    const Matrix4f &getOrthographicMatrix() const;
-    const Vector3f &getPosition() const;
-    const Vector3f &getCamX() const;
-    const Vector3f &getCamY() const;
-    const Vector3f &getViewDirection() const;
+	void rotateY(float degrees);
+	virtual void rotate(float yaw, float pitch);
+	
+    void setPosition(float x, float y, float z, bool observe = false);
+    void setPosition(const glm::vec3& position, bool observe = false);
+    void setRotationSpeed(float rotationSpeed);
+	void setMovingSpeed(float movingSpeed);
 
-    void setPosition(float x, float y, float z);
-    void setPosition(const Vector3f &position);
-
+    const glm::mat4& getViewMatrix() const;
+	const glm::mat4& getInvViewMatrix() const;
+	const glm::mat4& getPerspectiveMatrix() const;
+	const glm::mat4& getInvPerspectiveMatrix() const;
+	const glm::mat4& getOrthographicMatrix() const;
+	const glm::mat4& getInvOrthographicMatrix() const;
+	const glm::mat4 getRotationMatrix() const;
+	const glm::vec3& getPosition() const;
+	const glm::vec3& getCamX() const;
+	const glm::vec3& getCamY() const;
+	const glm::vec3& getCamZ() const;
+	
+	static glm::mat4 GetNormalMatrix(const glm::mat4& m);
+	static glm::mat4 GetRotationMatrix(const glm::mat4& viewMatrix);
+	
 private:
 
-    void rotateFirstPerson(float pitch, float yaw);
-    void updateViewMatrix(bool orthogonalizeAxes);
-    void updateViewMatrix(const Vector3f &eye, const Vector3f &target, const Vector3f &up);
+    void rotateFirstPerson(float yaw, float pitch);
+    void orthogonalize();
+	void fillRotationPart();
+	void fillTranslationPart();
 
-    Vector3f WORLD_XAXIS;
-    Vector3f WORLD_YAXIS;
-    Vector3f WORLD_ZAXIS;
+    glm::vec3 WORLD_XAXIS;
+	glm::vec3 WORLD_YAXIS;
+	glm::vec3 WORLD_ZAXIS;
 
-    float			m_fovx;
-    float			m_znear;
-    float			m_zfar;
-    float			m_aspectRatio;
-    float			m_accumPitchDegrees;
+	float			m_accumPitchDegrees;
+	float			m_accumYawDegrees;
+	float			m_rotationSpeed;
+	float			m_movingSpeed;
+	float			m_distance;
 
-    Vector3f		m_eye;
-    Vector3f		m_xAxis;
-    Vector3f		m_yAxis;
-    Vector3f		m_zAxis;
-    Vector3f		m_viewDir;
+	glm::vec3		m_eye;
+	glm::vec3		m_xAxis;
+    glm::vec3		m_yAxis;
+    glm::vec3		m_zAxis;
+	glm::vec3		m_viewDir;
+	glm::vec3		m_target;
 
-    Matrix4f		m_viewMatrix;
-    Matrix4f		m_invViewMatrix;
-    Matrix4f		m_projMatrix;
-    Matrix4f		m_invProjMatrix;
-    Matrix4f		m_orthMatrix;
-
+	glm::mat4		m_viewMatrix;
+	glm::mat4		m_invViewMatrix;
+	glm::mat4		m_persMatrix;
+	glm::mat4		m_invPersMatrix;
+	glm::mat4		m_orthMatrix;
+	glm::mat4		m_invOrthMatrix;
 };
-#endif // __cameraH__

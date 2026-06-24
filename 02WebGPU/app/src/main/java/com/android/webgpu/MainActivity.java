@@ -5,26 +5,26 @@ import android.os.Bundle;
 
 public class MainActivity extends AppCompatActivity {
 
-    AppView appView;
+    WgpView wgpView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        appView = new AppView(this);
-        appView.initRenderer(getAssets());
-        setContentView(appView);
+        wgpView = new WgpView(this);
+        wgpView.initRenderer(getAssets());
+        setContentView(wgpView);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        appView.onPause();
+        //wgpView.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        appView.onResume();
+        //wgpView.onResume();
     }
 
     @Override
