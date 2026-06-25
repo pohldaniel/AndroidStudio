@@ -9,7 +9,6 @@ set_target_properties(wgpu PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_
 set_target_properties(wgpu PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/SDK/include")
 
 include_directories(
-        "${CMAKE_CURRENT_SOURCE_DIR}/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/SDK/include"
 )
 
