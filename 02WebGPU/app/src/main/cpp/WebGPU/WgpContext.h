@@ -105,14 +105,31 @@ struct WgpContext {
 		std::vector<WGPUConstantEntry> constantEntries;
 	};
 
-	friend void wgpCreateDevice(void* window);
+	friend void wgpCreateDevice();
 	friend void wgpPipelinesRelease();
 	friend void wgpSamplersRelease();
 	friend void wgpShaderModulesRelease();
 	friend void wgpPipelineLayoutsRelease();
 	friend void wgpDraw();
 
-    void addSampler(const WGPUSampler& sampler, SamplerSlot samplerSlot);
+	void createComputePipeline(const std::string& shaderModuleName,
+	                           const std::string& entrypoint,
+	                           const std::string& pipelineLayoutName,
+	                           const std::function<std::vector<WGPUBindGroupLayout>()>& onBindGroupLayouts = nullptr);
+
+	void createRenderPipeline(const std::string& shaderModuleName,
+	                          const std::string& pipelineLayoutName,
+	                          VertexLayoutSlot vertexLayoutSlot,
+	                          const std::function<std::vector<WGPUBindGroupLayout>()>& onBindGroupLayouts = nullptr,
+	                          uint32_t msaaSampleCount = 1u,
+	                          WGPUPrimitiveTopology primitiveTopology = WGPUPrimitiveTopology::WGPUPrimitiveTopology_TriangleList,
+	                          WGPUTextureFormat colorTextureFormat = WGPUTextureFormat::WGPUTextureFormat_Undefined,
+	                          WGPUTextureFormat depthTextureFormat = WGPUTextureFormat::WGPUTextureFormat_Undefined,
+	                          WGPUCompareFunction depthCompareFunction = WGPUCompareFunction::WGPUCompareFunction_Less,
+	                          PipelineConfiguration configuration = { WRITE_DEPTH | DEPTH_STENCIL_STATE | BLEND_STATE | FRAGMENT_STATE, BlendMode::ALPHA_BLENDING, WGPUTextureFormat_Undefined, WGPUCullMode_Undefined, StencilMode::DEFAULT, {} });
+
+
+	void addSampler(const WGPUSampler& sampler, SamplerSlot samplerSlot);
     const WGPUSampler& getSampler(SamplerSlot samplerSlot) const;
     void addSahderModule(const std::string& shaderModuleName, const std::string& stringPath, bool fromString = false);
     const WGPUShaderModule& getShaderModule(std::string shaderModuleName) const;
@@ -126,7 +143,7 @@ struct WgpContext {
 	WGPUSurface surface = nullptr;
 	WGPUQueue queue = nullptr;
 	WGPUCommandEncoder commandEncoder = nullptr;
-	WGPUColor clearColor = { 1.0f, 0.0f, 0.0f, 1.0f };
+	WGPUColor clearColor = { 0.2f, 0.2f, 0.2f, 1.0f };
 
 	WGPUTextureView depthTextureView = nullptr;
 	WGPUTexture depthTexture = nullptr;
@@ -136,7 +153,7 @@ struct WgpContext {
 
 	WGPUSurfaceConfiguration config = {};
 	WGPUSurfaceCapabilities surfaceCapabilities;
-	WGPUTextureFormat depthFormat = WGPUTextureFormat::WGPUTextureFormat_Depth24PlusStencil8;
+	WGPUTextureFormat depthFormat = WGPUTextureFormat::WGPUTextureFormat_Depth24Plus;
 	WGPUTextureFormat colorFormat = WGPUTextureFormat::WGPUTextureFormat_BGRA8Unorm;
 
     std::unordered_map<std::string, WGPUComputePipeline> computePipelines;

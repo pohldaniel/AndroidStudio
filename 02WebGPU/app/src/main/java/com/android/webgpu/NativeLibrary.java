@@ -9,9 +9,8 @@ public class NativeLibrary {
         System.loadLibrary("native");
     }
 
-
+    public static native void wgpInit(AssetManager assetManager);
     public static native void initStates();
-    public static native void wgpInit();
     public static native void wgpConfigureSurface(Surface surface);
     public static native void wgpResize(Surface surface, int width, int height);
 

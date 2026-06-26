@@ -14,8 +14,11 @@
 #include <chrono>
 #include <ctime>
 
+#include "RenderThread.h"
+#include "AssetIO.h"
+
 #include "WebGPU/WgpContext.h"
-#include "WebGPU/WgpRenderer.h"
+#include "WebGpu/WgpTexture.h"
 
 #include "States/StateMachine.h"
 #include "States/Wireframe.h"
@@ -23,21 +26,23 @@
 #include "DeltaClock.h"
 
 DeltaClock mFrameClock;
-WgpRenderer* renderer = nullptr;
+RenderThread* renderThread = nullptr;
 StateMachine* Machine= nullptr;
 
 void renderFrame(){
     float deltaT = mFrameClock.ReadDelta();
 }
 
-extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_initStates(JNIEnv* env, jclass clazz){
+extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_wgpInit(JNIEnv* env, jclass clazz, jobject assetManager) {
+    AssetIO::Init(AAssetManager_fromJava(env, assetManager));
+    wgpInit();
     float dt = 0.0f; float fdt = 0.0f;
     Machine = new StateMachine(dt, fdt);
-    Machine->addStateAtTop(new Wireframe(*Machine));
 }
 
-extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_wgpInit(JNIEnv* env, jclass clazz) {
-    wgpInit();
+extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_initStates(JNIEnv* env, jclass clazz){
+    if(!Machine->isRunning())
+        Machine->addStateAtTop(new Wireframe(*Machine));
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_wgpConfigureSurface(JNIEnv* env, jclass clazz, jobject surface) {
@@ -49,17 +54,17 @@ extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_wgpResiz
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_start(JNIEnv* env, jclass clazz, jobject surface) {
-    if (renderer == nullptr) {
-        renderer = new WgpRenderer();
-        renderer->start();
+    if (renderThread == nullptr) {
+        renderThread = new RenderThread();
+        renderThread->start();
     }
 
     ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
-    renderer->setWindow(window);
+    renderThread->setWindow(window);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_stop(JNIEnv *env, jclass clazz) {
-    if (renderer != nullptr) {
-        renderer->setWindow(nullptr);
+    if (renderThread != nullptr) {
+        renderThread->setWindow(nullptr);
     }
 }

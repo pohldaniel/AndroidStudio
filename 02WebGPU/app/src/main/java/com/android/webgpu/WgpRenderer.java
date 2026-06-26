@@ -11,17 +11,14 @@ import javax.microedition.khronos.opengles.GL10;
 
 class WgpRenderer {
 
-    SurfaceView surfaceView;
-    AssetManager assetManager;
-    WgpRenderer(SurfaceView surfaceView, AssetManager assetManager){
-        this.surfaceView = surfaceView;
-        this.assetManager = assetManager;
-        NativeLibrary.wgpInit();
-        NativeLibrary.initStates();
+    WgpRenderer(AssetManager assetManager){
+        NativeLibrary.wgpInit(assetManager);
+
     }
 
     public void onSurfaceCreated(SurfaceHolder holder) {
        NativeLibrary.wgpConfigureSurface(holder.getSurface());
+       NativeLibrary.initStates();
     }
 
     public void onSurfaceChanged(SurfaceHolder holder,  int format, int width, int height) {

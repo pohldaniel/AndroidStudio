@@ -87,7 +87,7 @@ void State::OnMouseButtonUp(const Event::MouseButtonEvent& event){
 
 }
 
-void State::OnScroll(double xoffset, double yoffset){
+void State::OnScroll(double xOffset, double yOffset){
 
 }
 

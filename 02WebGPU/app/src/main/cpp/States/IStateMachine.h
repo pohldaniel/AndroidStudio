@@ -21,7 +21,7 @@ protected:
 	void clearStates();
 
 	std::stack<T*> m_states;
-	bool m_isRunning = true;
+	bool m_isRunning = false;
 };
 
 template<typename T>
@@ -36,6 +36,7 @@ T* IStateMachine<T>::addStateAtTop(T* state) {
 
 	m_states.push(state);
 	state->m_isActive = true;
+	m_isRunning = true;
 	return state;
 }
 
@@ -50,6 +51,7 @@ void IStateMachine<T>::addStateAtBottom(T* state) {
 		addStateAtBottom(state);
 		m_states.push(temp);
 	}
+	m_isRunning = true;
 }
 
 template<typename T>

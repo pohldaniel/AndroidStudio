@@ -3,6 +3,7 @@
 #include <string>
 
 #include "WgpBuffer.h"
+#include "WgpTexture.h"
 
 struct VertexAnimated {
 	std::array<float, 3> position;
@@ -44,6 +45,7 @@ public:
 	std::vector<WGPUBindGroup>& getBindGroups(const std::string& bindGroupsName) const;
 	std::vector<WGPUBindGroup>& getBindGroups() const;
 
+	const WgpTexture& getTexture() const;
 	const WgpBuffer& getVertexBuffer() const;
 	const WgpBuffer& getIndexBuffer() const;
 	uint32_t getDrawCount() const;
@@ -52,7 +54,7 @@ private:
 
 	WgpBuffer m_vertexBuffer;
 	WgpBuffer m_indexBuffer;
-
+	WgpTexture m_texture;
 	mutable std::unordered_map<std::string, std::vector<WGPUBindGroup>> m_bindGroups;
 
 	uint32_t m_drawCount;

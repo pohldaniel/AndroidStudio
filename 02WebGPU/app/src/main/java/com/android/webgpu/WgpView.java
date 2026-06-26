@@ -20,7 +20,7 @@ class WgpView extends SurfaceView implements SurfaceHolder.Callback {
         getHolder().addCallback(this);
     }
     public void initRenderer(final AssetManager assetManager){
-        wgpRenderer = new WgpRenderer(this, assetManager);
+        wgpRenderer = new WgpRenderer(assetManager);
     }
 
     @Override

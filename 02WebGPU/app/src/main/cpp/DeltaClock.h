@@ -1,3 +1,5 @@
+#pragma once
+
 #include <ctime>
 
 template<typename T> T Clamp(T v, T min, T max) {

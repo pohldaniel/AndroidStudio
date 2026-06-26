@@ -1,27 +1,13 @@
 #pragma once
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <atomic>
-#include <android/native_window.h>
+#include <webgpu.h>
 
-class WgpRenderer {
-public:
-    WgpRenderer() : m_RenderThread(), m_Running(false), m_Window(nullptr) {}
-    ~WgpRenderer() { stop(); }
+class WgpTexture;
+class WgpBuffer;
 
-    void start();
-    void stop();
-    void setWindow(ANativeWindow* window);
+struct WgpRenderer {
+	static void DrawDepth(const WgpTexture& texture, std::function<void(const WGPURenderPassEncoder& renderPassEncoder)> OnDraw = NULL);
 
-private:
-    void threadLoop();
-
-    std::thread m_RenderThread;
-    std::atomic<bool> m_Running;
-
-    std::mutex m_Mutex;
-    std::condition_variable m_CV;
-    ANativeWindow* m_Window; // Zugriffsschutz via Mutex erforderlich
+	static void Draw(const WgpTexture& texture, std::function<void(const WGPURenderPassEncoder& renderPassEncoder, uint32_t layer, uint32_t mip)> OnDraw = NULL);
+	static void Dispatch(const WgpTexture& texture, const WgpBuffer& probability, const WgpBuffer& bufferA, const WgpBuffer& bufferB);
 };
