@@ -5,6 +5,9 @@
 #include "WgpMesh.h"
 
 class Shape;
+class ObjModel;
+class AssimpModel;
+class AnimatedModel;
 
 class WgpModel {
 
@@ -18,6 +21,9 @@ public:
 	void draw(const WGPURenderBundleEncoder& renderBundleEncoder, uint32_t instanceCount = 1u) const;
 
 	void create(const Shape& shape);
+	void create(const ObjModel& model);
+	void create(const AssimpModel& model);
+	void create(const AnimatedModel& model);
 	void create(const std::vector<float>& vertexBuffer, const std::vector<unsigned int>& indexBuffer);
 	void create(const WgpBuffer& vertexBuffer, const WgpBuffer& indexBuffer);
 

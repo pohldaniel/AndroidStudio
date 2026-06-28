@@ -11,8 +11,15 @@
 #include <States/StateMachine.h>
 
 #include <core/Camera.h>
+#include <core/AssimpModel.h>
+#include <core/ObjModel.h>
+#include <core/TrackBall.h>
 
 class Wireframe : public State {
+    enum SelectedModel {
+        MAMMOTH,
+        DRAGON
+    };
 
 public:
     Wireframe(StateMachine& machine);
@@ -21,19 +28,26 @@ public:
     void fixedUpdate() override;
     void update() override;
     void render() override;
+    void resize(int deltaW, int deltaH) override;
     void OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor);
 
 private:
 
     std::vector<WGPUBindGroupLayout> OnBindGroupLayouts();
-    std::vector<WGPUBindGroup> OnBindGroups();
+    std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsWF();
 
-    Shape m_quad;
+    std::vector<WGPUBindGroup> OnBindGroups();
+    std::vector<WGPUBindGroup> OnBindGroupsWF();
+
+    void applyTransformation(const TrackBall& arc);
+
+    Camera m_camera;
+    ObjModel m_dragon;
+    TrackBall m_trackball;
     Uniforms m_uniforms;
 
-    WgpTexture m_wgpTexture;
-    WgpModel m_wgpQuad;
     WgpBuffer m_wgpBuffer;
+    WgpModel m_wgpDragon;
 
-    WGPUBindGroup m_bindgroup;
+    static void AddBindgroups(const WgpModel& model);
 };

@@ -23,6 +23,9 @@
 #include "States/StateMachine.h"
 #include "States/Wireframe.h"
 
+#include "AssimpModel.h"
+#include "ObjModel.h"
+
 #include "DeltaClock.h"
 
 DeltaClock mFrameClock;
@@ -35,6 +38,24 @@ void renderFrame(){
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_wgpInit(JNIEnv* env, jclass clazz, jobject assetManager) {
     AssetIO::Init(AAssetManager_fromJava(env, assetManager));
+
+    /*MemoryIOSystem* memoryFS = new MemoryIOSystem();
+
+    uint8_t* data; uint32_t size;
+    AssetIO::LoadAsset("models/dragon/dragon.obj", data, size);
+    memoryFS->AddFile("models/dragon/dragon.obj", std::vector<char>{data, data + size});
+    AssetIO::Free(data);
+
+    AssetIO::LoadAsset("models/dragon/dragon.mtl", data, size);
+    memoryFS->AddFile("models/dragon/dragon.mtl", std::vector<char>{data, data + size});
+    AssetIO::Free(data);
+
+    AssimpModel m_assimpModel;
+    m_assimpModel.loadModel(memoryFS, "models/dragon/dragon.obj", glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, glm::vec3(0.0f, -1.0f, 0.0f), 0.1f, false, false, false, false, true);
+
+    ObjModel m_objModel;
+    m_objModel.loadModel("models/dragon/dragon.obj", glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, glm::vec3(0.0f, -1.0f, 0.0f), 0.1f, false, false, false, false, false, true);*/
+
     wgpInit();
     float dt = 0.0f; float fdt = 0.0f;
     Machine = new StateMachine(dt, fdt);
