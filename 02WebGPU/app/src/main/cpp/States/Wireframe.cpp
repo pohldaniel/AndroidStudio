@@ -1,39 +1,30 @@
 #include "WgpContext.h"
-#include "AssetIO.h"
 #include "Wireframe.h"
 
 Wireframe::Wireframe(StateMachine& machine) : State(machine, States::WIREFRAME) {
 
-    /*MemoryIOSystem* memoryFS = new MemoryIOSystem();
-
-    uint8_t* data; uint32_t size;
-    AssetIO::LoadAsset("models/dragon/dragon.obj", data, size);
-    memoryFS->AddFile("models/dragon/dragon.obj", std::vector<char>{data, data + size});
-    AssetIO::Free(data);
-
-    AssetIO::LoadAsset("models/dragon/dragon.mtl", data, size);
-    memoryFS->AddFile("dragon.mtl", std::vector<char>{data, data + size});
-    AssetIO::Free(data);*/
-
-    m_camera.perspective(glm::radians(45.0f), static_cast<float>(500) / static_cast<float>(500), 0.1f, 1000.0f);
-    m_camera.orthographic(0.0f, static_cast<float>(500), 0.0f, static_cast<float>(500), -1.0f, 1.0f);
+    m_camera.perspective(glm::radians(45.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
+    m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);
     m_camera.lookAt(glm::vec3(1.0f, 2.0f, 4.0f), glm::vec3(0.2f, 0.2f, 1.5f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     m_camera.setRotationSpeed(0.125f);
     m_camera.setMovingSpeed(10.0f);
 
-    m_dragon.loadModel("res/models/dragon/dragon.obj", glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, glm::vec3(0.0f, -1.0f, 0.0f), 0.1f, false, false, false, false, false, true);
+    m_dragon.loadModel("models/dragon/dragon.obj", glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, glm::vec3(0.0f, -1.0f, 0.0f), 0.1f, false, false, false, false, false, true);
     m_dragon.rewind();
     m_dragon.generateColors(ModelColor::MC_POSITION);
 
-    wgpContext.addSahderModule("PTN", "res/shader/shader.wgsl");
+    m_wgpBuffer.createBuffer(sizeof(Uniforms), WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform);
+
+    wgpContext.addSahderModule("PTN", "shader/shader.wgsl");
     wgpContext.createRenderPipeline("PTN", "RP_PTNC", VL_PTNC, std::bind(&Wireframe::OnBindGroupLayouts, this));
 
-    wgpContext.addSahderModule("WF", "res/shader/wireframe.wgsl");
+    wgpContext.addSahderModule("WF", "shader/wireframe.wgsl");
     wgpContext.createRenderPipeline("WF", "RP_WF", VL_NONE, std::bind(&Wireframe::OnBindGroupLayoutsWF, this), 1u, WGPUPrimitiveTopology::WGPUPrimitiveTopology_LineList);
 
     m_wgpDragon.create(m_dragon);
     m_wgpDragon.setBindGroups("BG_WF", std::bind(&Wireframe::OnBindGroupsWF, this));
     m_wgpDragon.setBindGroups("BG", std::bind(&Wireframe::OnBindGroups, this));
+
     AddBindgroups(m_wgpDragon);
 
     m_uniforms.projection = m_camera.getPerspectiveMatrix();
@@ -55,6 +46,18 @@ Wireframe::~Wireframe() {
     m_wgpBuffer.markForDelete();
 }
 
+void Wireframe::fixedUpdate() {
+
+}
+
+void Wireframe::update() {
+
+}
+
+void Wireframe::render() {
+    wgpDraw();
+}
+
 void Wireframe::OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor) {
     m_uniforms.projection = m_camera.getPerspectiveMatrix();
     m_uniforms.view = m_camera.getViewMatrix();
@@ -68,21 +71,9 @@ void Wireframe::OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURende
     wgpuRenderPassEncoderRelease(renderPassEncoder);
 }
 
-void Wireframe::fixedUpdate() {
-
-}
-
-void Wireframe::update() {
-
-}
-
-void Wireframe::render() {
-
-}
-
 void Wireframe::resize(int deltaW, int deltaH) {
-    m_camera.perspective(glm::radians(45.0f), static_cast<float>(500) / static_cast<float>(500), 0.1f, 1000.0f);
-    m_camera.orthographic(0.0f, static_cast<float>(500), 0.0f, static_cast<float>(500), -1.0f, 1.0f);
+    m_camera.perspective(glm::radians(45.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
+    m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);
 }
 
 std::vector <WGPUBindGroupLayout> Wireframe::OnBindGroupLayouts() {

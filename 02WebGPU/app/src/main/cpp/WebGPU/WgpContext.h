@@ -31,6 +31,8 @@ struct WgpContext;
 extern WgpContext wgpContext;
 extern std::unordered_map<VertexLayoutSlot, std::vector<WGPUVertexAttribute>> wgpVertexAttributes;
 extern std::unordered_map<VertexLayoutSlot, std::vector<WGPUVertexBufferLayout>> wgpVertexBufferLayouts;
+extern uint32_t wgpWidth;
+extern uint32_t wgpHeight;
 
 extern "C" {
 	void wgpInit();
@@ -47,6 +49,7 @@ extern "C" {
     WGPUShaderModule wgpCreateShaderFromString(const std::string& string);
     std::vector<WGPUVertexAttribute>& wgpVertexAttribute(VertexLayoutSlot vertexLayoutSlot);
     std::vector<WGPUVertexBufferLayout>& wgpVertexBufferLayout(VertexLayoutSlot vertexLayoutSlot);
+    WGPUTextureFormat wgpMatchingFormat(WGPUSurfaceCapabilities& surfaceCapabilities, WGPUTextureFormat textureFormat);
 
     void wgpCreateVertexBufferLayout(VertexLayoutSlot slot = VL_PTN);
     void wgpShutDown();
@@ -62,6 +65,7 @@ extern "C" {
     void wgpSetMSAASampleCount(uint32_t count, const std::function<void()>& onSurfaceChange = nullptr);
     WGPURenderPassDepthStencilAttachment wgpCopyDepthStencilAttachment(const WGPURenderPassDepthStencilAttachment* src);
 
+	void wgpUpdate();
     void wgpDraw();
     void wgpSubmitQueue();
 }
@@ -154,7 +158,7 @@ struct WgpContext {
 	WGPUSurfaceConfiguration config = {};
 	WGPUSurfaceCapabilities surfaceCapabilities;
 	WGPUTextureFormat depthFormat = WGPUTextureFormat::WGPUTextureFormat_Depth24Plus;
-	WGPUTextureFormat colorFormat = WGPUTextureFormat::WGPUTextureFormat_BGRA8Unorm;
+	WGPUTextureFormat colorFormat = WGPUTextureFormat::WGPUTextureFormat_RGBA8Unorm;
 
     std::unordered_map<std::string, WGPUComputePipeline> computePipelines;
     std::unordered_map<std::string, WGPURenderPipeline> renderPipelines;

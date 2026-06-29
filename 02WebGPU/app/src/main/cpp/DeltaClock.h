@@ -10,9 +10,10 @@ float Clock();
 
 class DeltaClock {
     private:
-        float mLastTick;
+        mutable float mLastTick;
         float mMaxDelta;
         bool mHasMax;
+        mutable float d;
     public:
 
         DeltaClock() {
@@ -24,8 +25,8 @@ class DeltaClock {
             mMaxDelta = maxDelta;
             mHasMax = true;
         }
-        float ReadDelta() {
-            float d = Clamp(Clock() - mLastTick, 0.0f, mMaxDelta);
+        float& ReadDelta() const{
+            d = Clamp(Clock() - mLastTick, 0.0f, mMaxDelta);
             mLastTick = Clock();
             return d;
         }

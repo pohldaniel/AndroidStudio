@@ -4,6 +4,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include "../AssimpModel.h"
 #include "../BinaryIO.h"
 #include "Animation.h"
 
@@ -34,12 +35,13 @@ void Animation::loadAnimation(std::string filename) {
 	mdlcIO.anicToBuffer(filename.c_str(), m_animationName, m_length, m_tracks);
 }
 
-void Animation::loadAnimationAssimp(const std::string& filename, std::string sourceName, std::string destName) {
-	Assimp::Importer Importer;
-	const aiScene* aiScene = Importer.ReadFile(filename, NULL);
+void Animation::loadAnimationAssimp(MemoryIOSystem* memoryIOSystem, const std::string& filename, const std::string& sourceName, const std::string& destName) {
+	Assimp::Importer importer;
+	importer.SetIOHandler(memoryIOSystem);
+	const aiScene* aiScene = importer.ReadFile(filename, 0u);
 
 	if (!aiScene) {
-		std::cout << filename << "  " << Importer.GetErrorString() << std::endl;
+		std::cout << filename << "  " << importer.GetErrorString() << std::endl;
 		return;
 	}
 

@@ -26,6 +26,7 @@ struct WeightData {
 struct aiNode;
 class Bone;
 class AnimatedMesh;
+class MemoryIOSystem;
 class AnimatedModel : public Model {
 
 	friend class AnimatedMesh;
@@ -40,7 +41,7 @@ public:
 	void applyBindpose(bool onTransformChanged = false);
 	void cleanup();
 
-	void loadModelAssimp(const std::string& path, const short addVirtualRoots = 0, const bool reverseBoneList = false);
+	void loadModelAssimp(MemoryIOSystem* memoryIOSystem, const std::string& path, const short addVirtualRoots = 0, const bool reverseBoneList = false);
 	void loadModel(const std::string& path, const short addVirtualRoots = 0);
 	
 	void rotate(const float pitch, const float yaw, const float roll);

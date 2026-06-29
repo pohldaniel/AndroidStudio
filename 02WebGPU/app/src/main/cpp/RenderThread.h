@@ -6,11 +6,25 @@
 #include <atomic>
 #include <android/native_window.h>
 
+class DeltaClock;
+class StateMachine;
+
 class RenderThread {
 
 public:
-    RenderThread() : m_renderThread(), m_running(false), m_window(nullptr) {}
-    ~RenderThread() { stop(); }
+
+    RenderThread(const DeltaClock& deltaClock, StateMachine& stateMachine) :
+    m_renderThread(),
+    m_running(false),
+    m_window(nullptr),
+    deltaClock(deltaClock),
+    stateMachine(stateMachine){
+
+    }
+
+    ~RenderThread() {
+        stop();
+    }
 
     void start();
     void stop();
@@ -25,4 +39,6 @@ private:
     std::mutex m_Mutex;
     std::condition_variable m_cv;
     ANativeWindow* m_window;
+    const DeltaClock& deltaClock;
+    StateMachine& stateMachine;
 };

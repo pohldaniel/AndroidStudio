@@ -30,17 +30,17 @@ struct AnimationTrack {
 	std::vector<AnimationKeyFrame> m_keyFrames;
 };
 
+class MemoryIOSystem;
 class Animation {
 
 	friend class AnimatedModel;
-
 
 public:
 
 	Animation();
 	~Animation();
 
-	void loadAnimationAssimp(const std::string& filename, std::string sourceName, std::string destName);
+	void loadAnimationAssimp(MemoryIOSystem* memoryIOSystem, const std::string& filename, const std::string& sourceName, const std::string& destName);
 	void loadAnimation(std::string filename);
 
 	AnimationTrack* createTrack(const std::string& name);

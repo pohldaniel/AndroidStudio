@@ -1,4 +1,6 @@
 #include "WebGPU/WgpContext.h"
+#include "States/StateMachine.h"
+#include "DeltaClock.h"
 #include "RenderThread.h"
 
 void RenderThread::start() {
@@ -37,7 +39,8 @@ void RenderThread::threadLoop() {
         }
 
         if (!m_running) break;
-
-        wgpDraw();
+        deltaClock.ReadDelta();
+        stateMachine.update();
+        stateMachine.render();
     }
 }

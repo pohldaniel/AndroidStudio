@@ -10,41 +10,36 @@
 #include <Shape/Shape.h>
 #include <States/StateMachine.h>
 
-#include <core/Camera.h>
+#include <core/animation/AnimatedModel.h>
 #include <core/AssimpModel.h>
-#include <core/ObjModel.h>
-#include <core/TrackBall.h>
+#include <core/Camera.h>
 
-class Wireframe : public State {
-    enum SelectedModel {
-        MAMMOTH,
-        DRAGON
-    };
+#define MAX_JOIN 96u
+
+class Collada : public State {
+
 public:
-    Wireframe(StateMachine& machine);
-    ~Wireframe() override;
+    Collada(StateMachine& machine);
+    ~Collada() override;
 
     void fixedUpdate() override;
     void update() override;
     void render() override;
     void resize(int deltaW, int deltaH) override;
+
     void OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor);
 
 private:
 
     std::vector<WGPUBindGroupLayout> OnBindGroupLayouts();
-    std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsWF();
-
     std::vector<WGPUBindGroup> OnBindGroups();
-    std::vector<WGPUBindGroup> OnBindGroupsWF();
 
     Camera m_camera;
-    ObjModel m_dragon;
-    TrackBall m_trackball;
     Uniforms m_uniforms;
+    AnimatedModel m_cowboy;
+    Animation m_run;
 
-    WgpBuffer m_wgpBuffer;
-    WgpModel m_wgpDragon;
-
-    static void AddBindgroups(const WgpModel& model);
+    WgpBuffer m_wgpBuffer, m_wgpSkinBuffer;
+    WgpModel m_wgpCowboy;
+    WgpTexture m_wgpTexture;
 };

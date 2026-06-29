@@ -7,6 +7,8 @@
 WgpContext wgpContext = {};
 std::unordered_map<VertexLayoutSlot, std::vector<WGPUVertexAttribute>> wgpVertexAttributes;
 std::unordered_map<VertexLayoutSlot, std::vector<WGPUVertexBufferLayout>> wgpVertexBufferLayouts;
+uint32_t wgpWidth = 1u;
+uint32_t wgpHeight= 1u;
 
 void OnRequestAdapter(WGPURequestAdapterStatus status, WGPUAdapter adapter, WGPUStringView message, void* userdata1, void* userdata2) {
     struct std::pair<WgpContext&, bool>* userdata = (std::pair<WgpContext&, bool>*)userdata1;
@@ -215,6 +217,8 @@ void wgpConfigureSurface(void* window) {
 }
 
 void wgpResize(void* window, uint32_t width, uint32_t height) {
+    wgpWidth = width;
+    wgpHeight = height;
     if (window) {
         wgpCreateSurface(window);
 
@@ -703,16 +707,33 @@ void wgpCreateSurface(void* window){
         wgpContext.surface = wgpuInstanceCreateSurface(wgpContext.instance, &surfaceDescriptor);
         wgpContext.surfaceCapabilities = {};
         wgpuSurfaceGetCapabilities(wgpContext.surface, wgpContext.adapter, &wgpContext.surfaceCapabilities);
-        wgpContext.colorFormat = wgpContext.surfaceCapabilities.formats[0];
+        wgpContext.colorFormat = wgpMatchingFormat(wgpContext.surfaceCapabilities, wgpContext.colorFormat);
     }else{
         wgpuSurfaceRelease(wgpContext.surface);
         wgpContext.surface = wgpuInstanceCreateSurface(wgpContext.instance, &surfaceDescriptor);;
     }
 }
 
+WGPUTextureFormat wgpMatchingFormat(WGPUSurfaceCapabilities& surfaceCapabilities, WGPUTextureFormat textureFormat){
+    for(size_t index = 0u; index < surfaceCapabilities.formatCount; index++ ){
+        if(surfaceCapabilities.formats[index] == WGPUTextureFormat_RGBA8Unorm && (textureFormat == WGPUTextureFormat_RGBA8Unorm || textureFormat == WGPUTextureFormat_BGRA8Unorm))
+            return surfaceCapabilities.formats[index];
+
+        if(surfaceCapabilities.formats[index] == WGPUTextureFormat_BGRA8Unorm && (textureFormat == WGPUTextureFormat_RGBA8Unorm || textureFormat == WGPUTextureFormat_BGRA8Unorm))
+            return surfaceCapabilities.formats[index];
+
+        if(surfaceCapabilities.formats[index] == WGPUTextureFormat_RGBA8UnormSrgb && (textureFormat == WGPUTextureFormat_RGBA8UnormSrgb || textureFormat == WGPUTextureFormat_BGRA8UnormSrgb))
+            return surfaceCapabilities.formats[index];
+
+        if(surfaceCapabilities.formats[index] == WGPUTextureFormat_BGRA8UnormSrgb && (textureFormat == WGPUTextureFormat_RGBA8UnormSrgb || textureFormat == WGPUTextureFormat_BGRA8UnormSrgb))
+            return surfaceCapabilities.formats[index];
+    }
+    return surfaceCapabilities.formats[0];
+}
+
 void wgpSetSurfaceColorFormat(WGPUTextureFormat textureFormat, const std::function<void()>& onSurfaceChange) {
     if (wgpContext.surface) {
-        wgpContext.colorFormat = textureFormat;
+        wgpContext.colorFormat = wgpMatchingFormat(wgpContext.surfaceCapabilities, textureFormat);
         wgpContext.config.format = wgpContext.colorFormat;
         wgpuSurfaceConfigure(wgpContext.surface, &wgpContext.config);
 
@@ -797,7 +818,6 @@ WGPURenderPassDepthStencilAttachment wgpCopyDepthStencilAttachment(const WGPURen
 
     return dest;
 }
-
 
 void wgpDraw() {
     WGPUSurfaceTexture surfaceTexture;

@@ -7,7 +7,8 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include "BinaryIO.h"
+#include "../AssimpModel.h"
+#include "../BinaryIO.h"
 #include "Bone.h"
 #include "AnimatedModel.h"
 
@@ -102,18 +103,19 @@ void AnimatedModel::loadModel(const std::string& path, const short addVirtualRoo
 	mesh->createBones();
 }
 
-void AnimatedModel::loadModelAssimp(const std::string& path, const short addVirtualRoots, const bool reverseBoneList) {
+void AnimatedModel::loadModelAssimp(MemoryIOSystem* memoryIOSystem, const std::string& path, const short addVirtualRoots, const bool reverseBoneList) {
 
 	bool exportTangents = false;
 
-	Assimp::Importer Importer;
-	Importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
-	Importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
+	Assimp::Importer importer;
+	importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
+	importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
+	importer.SetIOHandler(memoryIOSystem);
 
-	const aiScene* pScene = Importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
+	const aiScene* pScene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
 
 	if (!pScene) {
-		std::cout << path << "  " << Importer.GetErrorString() << std::endl;
+		std::cout << path << "  " << importer.GetErrorString() << std::endl;
 		return;
 	}
 

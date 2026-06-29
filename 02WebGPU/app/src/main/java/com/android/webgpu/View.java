@@ -2,39 +2,40 @@ package com.android.webgpu;
 
 import android.content.Context;
 import android.content.res.AssetManager;
-import android.util.DisplayMetrics;
-import android.util.TypedValue;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import androidx.annotation.NonNull;
 
-import javax.microedition.khronos.opengles.GL10;
 
-class WgpView extends SurfaceView implements SurfaceHolder.Callback {
+class View extends SurfaceView implements SurfaceHolder.Callback {
 
-    WgpRenderer wgpRenderer;
+    Renderer renderer;
 
-    public WgpView(Context context) {
+    public View(Context context) {
         super(context);
         getHolder().addCallback(this);
     }
     public void initRenderer(final AssetManager assetManager){
-        wgpRenderer = new WgpRenderer(assetManager);
+        renderer = new Renderer(assetManager);
     }
 
     @Override
     public void surfaceCreated(@NonNull SurfaceHolder holder) {
-        wgpRenderer.onSurfaceCreated(holder);
+        renderer.onSurfaceCreated(holder);
     }
 
     @Override
     public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
-        wgpRenderer.onSurfaceChanged(holder, format, width, height);
+        renderer.onSurfaceChanged(holder, format, width, height);
     }
 
     @Override
     public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-        wgpRenderer.onSurfaceDestroyed();
+        renderer.onSurfaceDestroyed();
+    }
+
+    public void onDestroy(){
+        renderer.onDestroy();
     }
 }
