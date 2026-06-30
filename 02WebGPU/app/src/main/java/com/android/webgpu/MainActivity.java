@@ -1,21 +1,17 @@
 package com.android.webgpu;
 
 import androidx.appcompat.app.AppCompatActivity;
-import android.os.Bundle;
-import android.view.Gravity;
-import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.TextView;
 
+import android.os.Bundle;
+import android.widget.Button;
+
+import android.widget.FrameLayout;
+import androidx.appcompat.widget.Toolbar;
 
 public class MainActivity extends AppCompatActivity {
-    private final String[] appStates = {"Zustand 1: Init", "Zustand 2: WebGPU Pipeline", "Zustand 3: Render Loop"};
+    private final String[] appStates = {"Collada", "Wireframe"};
     private int currentStateIndex = 0;
-
-    private TextView statusText;
-    private Button buttonLeft;
-    private Button buttonRight;
-
+    private Toolbar toolbar;
     View view;
 
     @Override
@@ -27,28 +23,55 @@ public class MainActivity extends AppCompatActivity {
 
         view = new View(this);
         view.initRenderer(getAssets());
-
         container.addView(view);
+        toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
 
-        statusText = findViewById(R.id.textViewState);
-        buttonLeft = findViewById(R.id.button_left);
-        buttonRight = findViewById(R.id.button_right);
+        Button buttonLeft = findViewById(R.id.button_left);
+        Button buttonAction = findViewById(R.id.button_center);
+        Button buttonRight = findViewById(R.id.button_right);
 
-        if (buttonLeft != null) {
+        if (buttonLeft != null && buttonRight != null && buttonAction != null) {
+            buttonAction.setVisibility(View.GONE);
+            buttonLeft.setEnabled(false);
             buttonLeft.setOnClickListener(v -> {
+                int prevStateIndex = currentStateIndex;
                 if (currentStateIndex > 0) {
                     currentStateIndex--;
-                    statusText.setText(appStates[currentStateIndex]);
+                    toolbar.setTitle(appStates[currentStateIndex]);
+                    buttonRight.setEnabled(true);
+                }
+
+                if(prevStateIndex != currentStateIndex){
+                    view.onButton();
+                }
+
+                if(currentStateIndex == 0) {
+                    buttonLeft.setEnabled(false);
+                    buttonAction.setVisibility(View.GONE);
                 }
             });
-        }
 
-        if (buttonRight != null) {
             buttonRight.setOnClickListener(v -> {
-                if (currentStateIndex < appStates.length - 1) {
+                int prevStateIndex = currentStateIndex;
+                if (currentStateIndex < 1) {
                     currentStateIndex++;
-                    statusText.setText(appStates[currentStateIndex]);
+                    toolbar.setTitle(appStates[currentStateIndex]);
+                    buttonLeft.setEnabled(true);
                 }
+
+                if(prevStateIndex != currentStateIndex){
+                    view.onButton();
+                }
+                if(currentStateIndex == 1) {
+                    buttonRight.setEnabled(false);
+                    buttonAction.setVisibility(View.VISIBLE);
+                }
+
+            });
+
+            buttonAction.setOnClickListener(v -> {
+                view.onAction();
             });
         }
     }

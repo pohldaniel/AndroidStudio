@@ -157,8 +157,8 @@ void wgpCreateDevice() {
     WGPULimits requiredLimits = {};
     setDefault(requiredLimits);
     requiredLimits.nextInChain = nullptr;
-    requiredLimits.maxTextureDimension1D = 4096;
-    requiredLimits.maxTextureDimension2D = 4096;
+    requiredLimits.maxTextureDimension1D = 4096u;
+    requiredLimits.maxTextureDimension2D = 4096u;
     requiredLimits.maxTextureDimension3D = 2048u;
     requiredLimits.maxSamplersPerShaderStage = 1u;
 
@@ -602,8 +602,8 @@ WGPUSampler wgpCreateSampler(WGPUFilterMode filterMode, WGPUAddressMode addressM
 void wgpShutDown() {
     wgpPipelineLayoutsRelease();
     wgpPipelinesRelease();
-    wgpSamplersRelease();
     wgpShaderModulesRelease();
+    wgpSamplersRelease();
 
     wgpuTextureViewRelease(wgpContext.depthTextureView);
     wgpContext.depthTextureView = nullptr;

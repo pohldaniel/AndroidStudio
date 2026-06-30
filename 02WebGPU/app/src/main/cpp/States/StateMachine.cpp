@@ -1,7 +1,6 @@
 #include "StateMachine.h"
 
 bool StateMachine::WireframeEnabled = false;
-bool StateMachine::WireframeToggled = false;
 
 StateMachine::StateMachine(const float& dt, const float& fdt) : m_fdt(fdt),  m_dt(dt) {
 
@@ -48,19 +47,14 @@ void StateMachine::resizeState(int deltaW, int deltaH, States state) {
 
 void StateMachine::ToggleWireframe() {
 	WireframeEnabled = !WireframeEnabled;
-	WireframeToggled = true;
 }
 
 bool& StateMachine::GetWireframeEnabled() {
 	return WireframeEnabled;
 }
 
-bool StateMachine::IsWireframeToggled(){
-	if (WireframeToggled) {
-		WireframeToggled = false;
-		return true;
-	}
-	return false;
+void StateMachine::DisableWireframe(){
+	WireframeEnabled = false;
 }
 /////////////////////////////////////////////
 State::State(StateMachine& machine, States currentState) : m_machine(machine), m_fdt(machine.m_fdt), m_dt(machine.m_dt) {
@@ -97,4 +91,8 @@ void State::OnKeyDown(const Event::KeyboardEvent& event){
 
 void State::OnKeyUp(const Event::KeyboardEvent& event){
 	
+}
+
+void State::OnButton(){
+
 }

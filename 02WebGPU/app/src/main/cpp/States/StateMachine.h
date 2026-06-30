@@ -38,13 +38,11 @@ public:
 
 	static void ToggleWireframe();
 	static bool& GetWireframeEnabled();
-	static bool IsWireframeToggled();
+    static void DisableWireframe();
 
 private:
 
-	static bool WireframeToggled;
 	static bool WireframeEnabled;
-
 };
 
 class State : public IState<State> {
@@ -62,6 +60,7 @@ public:
 	virtual void OnScroll(double xOffset, double yOffset);
     virtual void OnKeyDown(const Event::KeyboardEvent& event);
 	virtual void OnKeyUp(const Event::KeyboardEvent& event);
+	virtual void OnButton();
 
 protected:
 

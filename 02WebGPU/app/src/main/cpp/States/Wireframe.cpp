@@ -1,7 +1,9 @@
+#include <States/Collada.h>
 #include "WgpContext.h"
 #include "Wireframe.h"
 
 Wireframe::Wireframe(StateMachine& machine) : State(machine, States::WIREFRAME) {
+    StateMachine::DisableWireframe();
 
     m_camera.perspective(glm::radians(45.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);
@@ -25,7 +27,7 @@ Wireframe::Wireframe(StateMachine& machine) : State(machine, States::WIREFRAME) 
     m_wgpDragon.setBindGroups("BG_WF", std::bind(&Wireframe::OnBindGroupsWF, this));
     m_wgpDragon.setBindGroups("BG", std::bind(&Wireframe::OnBindGroups, this));
 
-    AddBindgroups(m_wgpDragon);
+    AddBindGroups(m_wgpDragon);
 
     m_uniforms.projection = m_camera.getPerspectiveMatrix();
     m_uniforms.view = m_camera.getViewMatrix();
@@ -43,6 +45,18 @@ Wireframe::Wireframe(StateMachine& machine) : State(machine, States::WIREFRAME) 
 }
 
 Wireframe::~Wireframe() {
+    //wgpuBindGroupLayoutRelease(wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_PTNC"), 0u));
+    //wgpuBindGroupLayoutRelease(wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_PTNC"), 1u));
+    //wgpuRenderPipelineRelease(wgpContext.renderPipelines.at("RP_PTNC"));
+
+    //wgpuBindGroupLayoutRelease(wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_WF"), 0u));
+    //wgpuBindGroupLayoutRelease(wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_WF"), 1u));
+    //wgpuRenderPipelineRelease(wgpContext.renderPipelines.at("RP_WF"));
+
+    //wgpuPipelineLayoutRelease(wgpContext.getPipelineLayout("RP_PTNC"));
+    //wgpuPipelineLayoutRelease(wgpContext.getPipelineLayout("RP_WF"));
+    //wgpuShaderModuleRelease(wgpContext.getShaderModule("PTN"));
+    //wgpuShaderModuleRelease(wgpContext.getShaderModule("WF"));
     m_wgpBuffer.markForDelete();
 }
 
@@ -64,8 +78,24 @@ void Wireframe::OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURende
     wgpuQueueWriteBuffer(wgpContext.queue, m_wgpBuffer.getBuffer(), 0, &m_uniforms, sizeof(Uniforms));
 
     WGPURenderPassEncoder renderPassEncoder = wgpuCommandEncoderBeginRenderPass(wgpContext.commandEncoder, &renderPassDescriptor);
-    wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_PTNC"));
-    m_wgpDragon.draw(renderPassEncoder);
+    if (StateMachine::GetWireframeEnabled()) {
+        wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_WF"));
+        m_wgpDragon.setBindGroupsSlot("BG_WF");
+        for (std::list<WgpMesh>::const_iterator it = m_wgpDragon.getMeshes().begin();
+             it != m_wgpDragon.getMeshes().end(); ++it) {
+            const WgpMesh &mesh = *it;
+            std::vector<WGPUBindGroup> &bindGroups = mesh.getBindGroups();
+            for (uint32_t i = 0u; i < bindGroups.size(); i++) {
+                wgpuRenderPassEncoderSetBindGroup(renderPassEncoder, i, bindGroups[i], 0u, NULL);
+            }
+
+            wgpuRenderPassEncoderDraw(renderPassEncoder, 2u * mesh.getDrawCount(), 1u, 0u, 0u);
+        }
+    }else{
+        wgpuRenderPassEncoderSetPipeline(renderPassEncoder,wgpContext.renderPipelines.at("RP_PTNC"));
+        m_wgpDragon.setBindGroupsSlot("BG");
+        m_wgpDragon.draw(renderPassEncoder);
+    }
 
     wgpuRenderPassEncoderEnd(renderPassEncoder);
     wgpuRenderPassEncoderRelease(renderPassEncoder);
@@ -74,6 +104,11 @@ void Wireframe::OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURende
 void Wireframe::resize(int deltaW, int deltaH) {
     m_camera.perspective(glm::radians(45.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);
+}
+
+void Wireframe::OnButton() {
+    m_isRunning = false;
+    m_machine.addStateAtBottom(new Collada(m_machine));
 }
 
 std::vector <WGPUBindGroupLayout> Wireframe::OnBindGroupLayouts() {
@@ -196,7 +231,7 @@ std::vector<WGPUBindGroup> Wireframe::OnBindGroupsWF() {
     return bindGroups;
 }
 
-void Wireframe::AddBindgroups(const WgpModel& model) {
+void Wireframe::AddBindGroups(const WgpModel& model) {
     for (std::list<WgpMesh>::const_iterator it = model.getMeshes().begin(); it != model.getMeshes().end(); ++it) {
         const WgpMesh& mesh = *it;
 

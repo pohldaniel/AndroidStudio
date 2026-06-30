@@ -1,9 +1,10 @@
+#include <States/Wireframe.h>
 #include "WgpContext.h"
 #include "AssetIO.h"
 #include "Collada.h"
 
 Collada::Collada(StateMachine& machine) : State(machine, States::COLLADA)  {
-
+    StateMachine::DisableWireframe();
     uint8_t* data; uint32_t size;
     AssetIO::LoadAsset("models/cowboy/cowboy.dae", data, size);
 
@@ -53,6 +54,12 @@ Collada::Collada(StateMachine& machine) : State(machine, States::COLLADA)  {
 }
 
 Collada::~Collada() {
+    //wgpuBindGroupLayoutRelease(wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_ANIMATION"), 0u));
+    //wgpuBindGroupLayoutRelease(wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_ANIMATION"), 1u));
+    //wgpuRenderPipelineRelease(wgpContext.renderPipelines.at("RP_ANIMATION"));
+    //wgpuPipelineLayoutRelease(wgpContext.getPipelineLayout("RP_ANIMATION"));
+    //wgpuShaderModuleRelease(wgpContext.getShaderModule("ANIMATION"));
+
     m_wgpBuffer.markForDelete();
     m_wgpSkinBuffer.markForDelete();
 }
@@ -86,8 +93,13 @@ void Collada::OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderP
 }
 
 void Collada::resize(int deltaW, int deltaH) {
-    m_camera.perspective(glm::radians(45.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
+    m_camera.perspective(glm::radians(25.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);
+}
+
+void Collada::OnButton() {
+    m_isRunning = false;
+    m_machine.addStateAtBottom(new Wireframe(m_machine));
 }
 
 std::vector <WGPUBindGroupLayout> Collada::OnBindGroupLayouts() {

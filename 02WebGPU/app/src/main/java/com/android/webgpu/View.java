@@ -38,4 +38,12 @@ class View extends SurfaceView implements SurfaceHolder.Callback {
     public void onDestroy(){
         renderer.onDestroy();
     }
+
+    public void onButton(){
+        renderer.onButton();
+    }
+
+    public void onAction(){
+        renderer.onAction();
+    }
 }

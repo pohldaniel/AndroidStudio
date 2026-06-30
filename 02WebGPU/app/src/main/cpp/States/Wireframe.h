@@ -29,6 +29,7 @@ public:
     void render() override;
     void resize(int deltaW, int deltaH) override;
     void OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor);
+    void OnButton() override;
 
 private:
 
@@ -46,5 +47,5 @@ private:
     WgpBuffer m_wgpBuffer;
     WgpModel m_wgpDragon;
 
-    static void AddBindgroups(const WgpModel& model);
+    static void AddBindGroups(const WgpModel& model);
 };

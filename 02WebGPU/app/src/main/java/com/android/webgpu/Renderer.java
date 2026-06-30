@@ -36,4 +36,12 @@ class Renderer {
     public void stop() {
         NativeLibrary.stop();
     }
+
+    public void onButton(){
+        NativeLibrary.OnButton();
+    }
+
+    public void onAction(){
+        NativeLibrary.OnAction();
+    }
 }
