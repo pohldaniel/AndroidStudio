@@ -32,6 +32,7 @@ public:
 	void update();
 	void render();
 	void resizeState(int deltaW, int deltaH, States state);
+	void popState();
 
 	const float& m_fdt;
 	const float& m_dt;

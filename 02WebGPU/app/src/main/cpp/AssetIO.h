@@ -7,5 +7,8 @@ struct AssetIO{
     static void LoadAsset(const char* fileName, uint8_t*& content, uint32_t& size);
     static void Free(uint8_t*& content);
 
+private:
+
     static AAssetManager* AssetManager;
+
 };

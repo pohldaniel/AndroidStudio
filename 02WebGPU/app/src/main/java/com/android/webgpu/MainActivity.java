@@ -2,6 +2,7 @@ package com.android.webgpu;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.widget.Button;
 
@@ -13,6 +14,7 @@ public class MainActivity extends AppCompatActivity {
     private int currentStateIndex = 0;
     private Toolbar toolbar;
     View view;
+    private static AssetManager assetManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,9 +22,10 @@ public class MainActivity extends AppCompatActivity {
         
         setContentView(R.layout.activity_main);
         FrameLayout container = findViewById(R.id.webgpu_container);
+        AssetManager assetManager = getAssets();
 
         view = new View(this);
-        view.initRenderer(getAssets());
+        view.initRenderer(assetManager);
         container.addView(view);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);

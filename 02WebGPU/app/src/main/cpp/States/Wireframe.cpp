@@ -1,15 +1,18 @@
 #include <States/Collada.h>
 #include "WgpContext.h"
 #include "Wireframe.h"
-
+#include "Logging.h"
 Wireframe::Wireframe(StateMachine& machine) : State(machine, States::WIREFRAME) {
     StateMachine::DisableWireframe();
+
 
     m_camera.perspective(glm::radians(45.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);
     m_camera.lookAt(glm::vec3(1.0f, 2.0f, 4.0f), glm::vec3(0.2f, 0.2f, 1.5f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     m_camera.setRotationSpeed(0.125f);
     m_camera.setMovingSpeed(10.0f);
+
+    LOGI("################");
 
     m_dragon.loadModel("models/dragon/dragon.obj", glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, glm::vec3(0.0f, -1.0f, 0.0f), 0.1f, false, false, false, false, false, true);
     m_dragon.rewind();
@@ -45,18 +48,6 @@ Wireframe::Wireframe(StateMachine& machine) : State(machine, States::WIREFRAME) 
 }
 
 Wireframe::~Wireframe() {
-    //wgpuBindGroupLayoutRelease(wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_PTNC"), 0u));
-    //wgpuBindGroupLayoutRelease(wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_PTNC"), 1u));
-    //wgpuRenderPipelineRelease(wgpContext.renderPipelines.at("RP_PTNC"));
-
-    //wgpuBindGroupLayoutRelease(wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_WF"), 0u));
-    //wgpuBindGroupLayoutRelease(wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_WF"), 1u));
-    //wgpuRenderPipelineRelease(wgpContext.renderPipelines.at("RP_WF"));
-
-    //wgpuPipelineLayoutRelease(wgpContext.getPipelineLayout("RP_PTNC"));
-    //wgpuPipelineLayoutRelease(wgpContext.getPipelineLayout("RP_WF"));
-    //wgpuShaderModuleRelease(wgpContext.getShaderModule("PTN"));
-    //wgpuShaderModuleRelease(wgpContext.getShaderModule("WF"));
     m_wgpBuffer.markForDelete();
 }
 
@@ -107,6 +98,10 @@ void Wireframe::resize(int deltaW, int deltaH) {
 }
 
 void Wireframe::OnButton() {
+    wgpPipelineLayoutsRelease();
+    wgpPipelinesRelease();
+    wgpShaderModulesRelease();
+
     m_isRunning = false;
     m_machine.addStateAtBottom(new Collada(m_machine));
 }

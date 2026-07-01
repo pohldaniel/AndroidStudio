@@ -11,16 +11,20 @@ void StateMachine::fixedUpdate() {
 		m_states.top()->fixedUpdate();
 }
 
+void StateMachine::popState(){
+    if (!m_states.top()->isRunning()) {
+        States state = m_states.top()->getCurrentState();
+        delete m_states.top();
+        m_states.pop();
+        if (!m_states.empty())
+            m_states.top()->OnReEnter(state);
+    }
+}
+
 void StateMachine::update() {
 	if (!m_states.empty()) {
 		m_states.top()->update();
-		if (!m_states.top()->isRunning()) {
-			States state = m_states.top()->getCurrentState();
-			delete m_states.top();
-			m_states.pop();
-			if (!m_states.empty())
-				m_states.top()->OnReEnter(state);
-		}
+        popState();
 	}else {
 		m_isRunning = false;
 	}

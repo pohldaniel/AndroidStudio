@@ -659,18 +659,32 @@ void wgpShaderModulesRelease() {
 }
 
 void wgpPipelinesRelease() {
+    WGPUBindGroupLayout prevBindGroupLayout = nullptr;
+    uint32_t index = 0u;
+
     for (auto& it : wgpContext.renderPipelines) {
-        WGPUBindGroupLayout bindGroupLayout = wgpuRenderPipelineGetBindGroupLayout(it.second, 0);
-        wgpuBindGroupLayoutRelease(bindGroupLayout);
+        WGPUBindGroupLayout bindGroupLayout = wgpuRenderPipelineGetBindGroupLayout(it.second, index);
+        while (bindGroupLayout != prevBindGroupLayout) {
+            prevBindGroupLayout = bindGroupLayout;
+            wgpuBindGroupLayoutRelease(bindGroupLayout);
+            index++;
+        }
         wgpuRenderPipelineRelease(it.second);
     }
 
     wgpContext.renderPipelines.clear();
     wgpContext.renderPipelines.rehash(0u);
 
+    prevBindGroupLayout = nullptr;
+    index = 0u;
+
     for (auto& it : wgpContext.computePipelines) {
-        WGPUBindGroupLayout bindGroupLayout = wgpuComputePipelineGetBindGroupLayout(it.second, 0);
-        wgpuBindGroupLayoutRelease(bindGroupLayout);
+        WGPUBindGroupLayout bindGroupLayout = wgpuComputePipelineGetBindGroupLayout(it.second, index);
+        while (bindGroupLayout != prevBindGroupLayout) {
+            prevBindGroupLayout = bindGroupLayout;
+            wgpuBindGroupLayoutRelease(bindGroupLayout);
+            index++;
+        }
         wgpuComputePipelineRelease(it.second);
     }
 

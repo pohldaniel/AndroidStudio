@@ -5,6 +5,7 @@
 
 Collada::Collada(StateMachine& machine) : State(machine, States::COLLADA)  {
     StateMachine::DisableWireframe();
+
     uint8_t* data; uint32_t size;
     AssetIO::LoadAsset("models/cowboy/cowboy.dae", data, size);
 
@@ -54,12 +55,6 @@ Collada::Collada(StateMachine& machine) : State(machine, States::COLLADA)  {
 }
 
 Collada::~Collada() {
-    //wgpuBindGroupLayoutRelease(wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_ANIMATION"), 0u));
-    //wgpuBindGroupLayoutRelease(wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_ANIMATION"), 1u));
-    //wgpuRenderPipelineRelease(wgpContext.renderPipelines.at("RP_ANIMATION"));
-    //wgpuPipelineLayoutRelease(wgpContext.getPipelineLayout("RP_ANIMATION"));
-    //wgpuShaderModuleRelease(wgpContext.getShaderModule("ANIMATION"));
-
     m_wgpBuffer.markForDelete();
     m_wgpSkinBuffer.markForDelete();
 }
@@ -98,6 +93,10 @@ void Collada::resize(int deltaW, int deltaH) {
 }
 
 void Collada::OnButton() {
+    wgpPipelineLayoutsRelease();
+    wgpPipelinesRelease();
+    wgpShaderModulesRelease();
+
     m_isRunning = false;
     m_machine.addStateAtBottom(new Wireframe(m_machine));
 }

@@ -81,8 +81,13 @@ extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_destroy(
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_OnButton(JNIEnv *env, jclass clazz) {
-    if(Machine->isRunning())
+    renderThread->pause();
+    if(Machine->isRunning()) {
         Machine->getStates().top()->OnButton();
+        Machine->popState();
+    }
+
+    renderThread->resume();
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_OnAction(JNIEnv *env, jclass clazz) {

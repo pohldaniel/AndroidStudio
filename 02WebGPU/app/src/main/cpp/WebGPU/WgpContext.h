@@ -168,6 +168,6 @@ struct WgpContext {
 private:
 
     std::unordered_map<std::string, WGPUPipelineLayout> pipelineLayouts;
-    std::unordered_map<SamplerSlot, WGPUSampler> samplers;
     std::unordered_map<std::string, WGPUShaderModule> shaderModules;
+    std::unordered_map<SamplerSlot, WGPUSampler> samplers;
 };
