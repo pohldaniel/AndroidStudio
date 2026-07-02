@@ -15,11 +15,12 @@
 #include <core/ObjModel.h>
 #include <core/TrackBall.h>
 
-class Wireframe : public State {
+class VolumeRendering : public State {
 
 public:
-    Wireframe(StateMachine& machine);
-    ~Wireframe() override;
+
+    VolumeRendering(StateMachine& machine);
+    ~VolumeRendering();
 
     void fixedUpdate() override;
     void update() override;
@@ -31,19 +32,20 @@ public:
 
 private:
 
-    std::vector<WGPUBindGroupLayout> OnBindGroupLayouts();
-    std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsWF();
+    std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsVolume();
+    WGPUBindGroup createVolumeBindGroup();
 
-    std::vector<WGPUBindGroup> OnBindGroups();
-    std::vector<WGPUBindGroup> OnBindGroupsWF();
+    bool m_initUi = true;
+    bool m_drawUi = true;
+    float m_rotation = 0.0f;
+    bool m_rotate = true;
+    float m_near = 4.3f;
+    float m_far = 4.4f;
 
     Camera m_camera;
-    ObjModel m_dragon;
     TrackBall m_trackball;
-    Uniforms m_uniforms;
 
-    WgpBuffer m_wgpBuffer;
-    WgpModel m_wgpDragon;
-
-    static void AddBindGroups(const WgpModel& model);
+    WgpBuffer m_uniformBuffer;
+    WgpTexture m_volumeTexture;
+    WGPUBindGroup m_volumeBindGroup;
 };

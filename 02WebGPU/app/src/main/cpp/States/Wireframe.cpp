@@ -1,6 +1,6 @@
 #include <WebGPU/WgpContext.h>
 #include <States/Collada.h>
-#include <States/DefferedRendering.h>
+#include <States/DeferredRendering.h>
 
 #include "Wireframe.h"
 
@@ -109,7 +109,7 @@ void Wireframe::OnButton(const Event::MouseButtonEvent& event) {
         StateMachine::DisableWireframe();
         wgpCleanState();
         m_isRunning = false;
-        m_machine.addStateAtBottom(new DefferedRendering(m_machine));
+        m_machine.addStateAtBottom(new DeferredRendering(m_machine));
     }
 
     if(event.button == Event::MouseButtonEvent::BUTTON_MIDDLE)

@@ -273,7 +273,6 @@ void WgpTexture::loadFromFile(const std::string& fileName, const bool flipVertic
     FREE_IMAGE_FORMAT fif = FreeImage_GetFileTypeFromMemory(hmem);
     FIBITMAP* sourceBitmap = FreeImage_LoadFromMemory(fif, hmem);
 
-
     SwapRedBlue32(sourceBitmap);
     
     if(flipVertical)
@@ -304,11 +303,8 @@ void WgpTexture::loadFromFile(const std::string& fileName, const bool flipVertic
 
 void WgpTexture::loadFromFile(const std::string& fileName, uint32_t width, uint32_t height, uint32_t depth) {
 
-    unsigned char* imageData = (unsigned char*)malloc(width * height * depth);
-
-    std::ifstream file(fileName, std::ios::binary);
-    file.read(reinterpret_cast<char*>(imageData), width * height * depth * sizeof(unsigned char));
-    file.close();
+    uint8_t* data; uint32_t size;
+    AssetIO::LoadAsset(fileName.c_str(), data, size);
 
     WGPUTextureFormat viewFormat = WGPUTextureFormat::WGPUTextureFormat_R8Unorm;
     WGPUTextureDescriptor textureDescriptor = {};
@@ -338,7 +334,7 @@ void WgpTexture::loadFromFile(const std::string& fileName, uint32_t width, uint3
     source.rowsPerImage = height;
     WGPUExtent3D extent3D = { width , height , depth };
 
-    wgpuQueueWriteTexture(wgpContext.queue, &destination, imageData, width * height * depth, &source, &extent3D);
+    wgpuQueueWriteTexture(wgpContext.queue, &destination, data, width * height * depth, &source, &extent3D);
 
     WGPUTextureViewDescriptor textureViewDescriptor = {};
     textureViewDescriptor.label = WGPU_STR("texture_view");
@@ -352,7 +348,7 @@ void WgpTexture::loadFromFile(const std::string& fileName, uint32_t width, uint3
     textureViewDescriptor.nextInChain = nullptr;
     m_textureView = wgpuTextureCreateView(m_texture, &textureViewDescriptor);
 
-    free(imageData);
+    AssetIO::Free(data);
 }
 
 void WgpTexture::loadFromMemory(unsigned char* data, uint32_t size, const bool flipVertical, const short alphaChannel) {

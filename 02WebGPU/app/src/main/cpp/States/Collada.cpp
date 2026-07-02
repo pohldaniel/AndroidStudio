@@ -1,5 +1,6 @@
 #include <WebGPU/WgpContext.h>
 #include <States/Wireframe.h>
+#include <States/VolumeRendering.h>
 
 #include "AssetIO.h"
 #include "Collada.h"
@@ -94,9 +95,15 @@ void Collada::resize(int deltaW, int deltaH) {
 
 void Collada::OnButton(const Event::MouseButtonEvent& event) {
     wgpCleanState();
-
     m_isRunning = false;
-    m_machine.addStateAtBottom(new Wireframe(m_machine));
+
+    if(event.button == Event::MouseButtonEvent::BUTTON_LEFT){
+        m_machine.addStateAtBottom(new VolumeRendering(m_machine));
+    }
+
+    if(event.button == Event::MouseButtonEvent::BUTTON_RIGHT){
+        m_machine.addStateAtBottom(new Wireframe(m_machine));
+    }
 }
 
 std::vector <WGPUBindGroupLayout> Collada::OnBindGroupLayouts() {

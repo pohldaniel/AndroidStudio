@@ -8,6 +8,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/Theme.WebGPU">
         <activity android:name=".MainActivity"
+				  android:screenOrientation="portrait"
                   android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

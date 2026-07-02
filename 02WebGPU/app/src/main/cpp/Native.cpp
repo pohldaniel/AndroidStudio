@@ -21,9 +21,7 @@
 #include "WebGpu/WgpTexture.h"
 
 #include "States/StateMachine.h"
-#include "States/Wireframe.h"
 #include "States/Collada.h"
-#include "States/DefferedRendering.h"
 
 #include "core/Event.h"
 
