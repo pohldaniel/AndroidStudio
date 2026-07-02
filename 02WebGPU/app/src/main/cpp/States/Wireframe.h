@@ -16,10 +16,7 @@
 #include <core/TrackBall.h>
 
 class Wireframe : public State {
-    enum SelectedModel {
-        MAMMOTH,
-        DRAGON
-    };
+
 public:
     Wireframe(StateMachine& machine);
     ~Wireframe() override;
@@ -29,7 +26,8 @@ public:
     void render() override;
     void resize(int deltaW, int deltaH) override;
     void OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor);
-    void OnButton() override;
+
+    void OnButton(const Event::MouseButtonEvent& event) override;
 
 private:
 

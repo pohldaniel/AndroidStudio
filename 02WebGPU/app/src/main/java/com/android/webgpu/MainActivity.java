@@ -10,22 +10,20 @@ import android.widget.FrameLayout;
 import androidx.appcompat.widget.Toolbar;
 
 public class MainActivity extends AppCompatActivity {
-    private final String[] appStates = {"Collada", "Wireframe"};
+    private final String[] appStates = {"Collada", "Wireframe", "Deffered"};
     private int currentStateIndex = 0;
     private Toolbar toolbar;
     View view;
-    private static AssetManager assetManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
+
         setContentView(R.layout.activity_main);
         FrameLayout container = findViewById(R.id.webgpu_container);
-        AssetManager assetManager = getAssets();
 
         view = new View(this);
-        view.initRenderer(assetManager);
+        view.initRenderer(getAssets());
         container.addView(view);
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -46,35 +44,38 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if(prevStateIndex != currentStateIndex){
-                    view.onButton();
+                    NativeLibrary.OnButton(0);
                 }
 
                 if(currentStateIndex == 0) {
                     buttonLeft.setEnabled(false);
-                    buttonAction.setVisibility(View.GONE);
                 }
+
+                buttonAction.setVisibility(currentStateIndex == 1 ? View.VISIBLE : View.GONE);
             });
 
             buttonRight.setOnClickListener(v -> {
+                int length = appStates.length - 1;
                 int prevStateIndex = currentStateIndex;
-                if (currentStateIndex < 1) {
+                if (currentStateIndex < length) {
                     currentStateIndex++;
                     toolbar.setTitle(appStates[currentStateIndex]);
                     buttonLeft.setEnabled(true);
                 }
 
                 if(prevStateIndex != currentStateIndex){
-                    view.onButton();
-                }
-                if(currentStateIndex == 1) {
-                    buttonRight.setEnabled(false);
-                    buttonAction.setVisibility(View.VISIBLE);
+                    NativeLibrary.OnButton(2);
                 }
 
+                if(currentStateIndex == length) {
+                    buttonRight.setEnabled(false);
+                }
+
+                buttonAction.setVisibility(currentStateIndex == 1 ? View.VISIBLE : View.GONE);
             });
 
             buttonAction.setOnClickListener(v -> {
-                view.onAction();
+                NativeLibrary.OnButton(1);
             });
         }
     }

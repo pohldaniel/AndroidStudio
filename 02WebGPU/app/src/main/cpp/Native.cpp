@@ -23,9 +23,9 @@
 #include "States/StateMachine.h"
 #include "States/Wireframe.h"
 #include "States/Collada.h"
+#include "States/DefferedRendering.h"
 
-#include "AssimpModel.h"
-#include "ObjModel.h"
+#include "core/Event.h"
 
 #include "DeltaClock.h"
 #include "Logging.h"
@@ -80,16 +80,20 @@ extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_destroy(
     delete renderThread;
 }
 
-extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_OnButton(JNIEnv *env, jclass clazz) {
+extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_OnButton(JNIEnv *env, jclass clazz, jint button) {
     renderThread->pause();
     if(Machine->isRunning()) {
-        Machine->getStates().top()->OnButton();
+        Event event;
+        event.type = Event::MOUSEBUTTONDOWN;
+        event.data.mouseButton.x = 0;
+        event.data.mouseButton.y = 0;
+        event.data.mouseButton.button = button == 0 ? Event::MouseButtonEvent::MouseButton::BUTTON_LEFT  :
+                                        button == 1 ?  Event::MouseButtonEvent::MouseButton::BUTTON_MIDDLE :
+                                        Event::MouseButtonEvent::MouseButton::BUTTON_RIGHT;
+
+        Machine->getStates().top()->OnButton(event.data.mouseButton);
         Machine->popState();
     }
 
     renderThread->resume();
-}
-
-extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_OnAction(JNIEnv *env, jclass clazz) {
-    StateMachine::ToggleWireframe();
 }

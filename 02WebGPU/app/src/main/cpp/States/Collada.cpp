@@ -1,10 +1,10 @@
+#include <WebGPU/WgpContext.h>
 #include <States/Wireframe.h>
-#include "WgpContext.h"
+
 #include "AssetIO.h"
 #include "Collada.h"
 
 Collada::Collada(StateMachine& machine) : State(machine, States::COLLADA)  {
-    StateMachine::DisableWireframe();
 
     uint8_t* data; uint32_t size;
     AssetIO::LoadAsset("models/cowboy/cowboy.dae", data, size);
@@ -92,10 +92,8 @@ void Collada::resize(int deltaW, int deltaH) {
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);
 }
 
-void Collada::OnButton() {
-    wgpPipelineLayoutsRelease();
-    wgpPipelinesRelease();
-    wgpShaderModulesRelease();
+void Collada::OnButton(const Event::MouseButtonEvent& event) {
+    wgpCleanState();
 
     m_isRunning = false;
     m_machine.addStateAtBottom(new Wireframe(m_machine));

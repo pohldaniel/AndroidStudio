@@ -53,19 +53,19 @@ extern "C" {
 
     void wgpCreateVertexBufferLayout(VertexLayoutSlot slot = VL_PTN);
     void wgpShutDown();
+	void wgpCleanState();
     void wgpSamplersRelease();
     void wgpShaderModulesRelease();
     void wgpPipelinesRelease();
     void wgpPipelineLayoutsRelease();
+
     void wgpToggleVerticalSync();
     void wgpCreateSurface(void* window);
-
     void wgpSetSurfaceColorFormat(WGPUTextureFormat textureFormat, const std::function<void()>& onSurfaceChange = nullptr);
     void wgpSetSurfaceDepthFormat(WGPUTextureFormat textureFormat, const std::function<void()>& onSurfaceChange = nullptr);
     void wgpSetMSAASampleCount(uint32_t count, const std::function<void()>& onSurfaceChange = nullptr);
     WGPURenderPassDepthStencilAttachment wgpCopyDepthStencilAttachment(const WGPURenderPassDepthStencilAttachment* src);
 
-	void wgpUpdate();
     void wgpDraw();
     void wgpSubmitQueue();
 }
@@ -110,6 +110,7 @@ struct WgpContext {
 	};
 
 	friend void wgpCreateDevice();
+	friend void wgpCleanState();
 	friend void wgpPipelinesRelease();
 	friend void wgpSamplersRelease();
 	friend void wgpShaderModulesRelease();

@@ -16,32 +16,17 @@ class Renderer {
     }
 
     public void onSurfaceChanged(SurfaceHolder holder,  int format, int width, int height) {
-        stop();
+        NativeLibrary.stop();
         NativeLibrary.resize(holder.getSurface(), width, height);
-        start(holder);
-    }
-
-    public void onSurfaceDestroyed(){
-        stop();
-    }
-
-    public void onDestroy(){
-        NativeLibrary.destroy();
-    }
-
-    public void start(SurfaceHolder holder) {
         NativeLibrary.start(holder.getSurface());
     }
 
-    public void stop() {
+    public void onSurfaceDestroyed(){
         NativeLibrary.stop();
     }
 
-    public void onButton(){
-        NativeLibrary.OnButton();
+    public void onContextDestroyed(){
+        NativeLibrary.destroy();
     }
 
-    public void onAction(){
-        NativeLibrary.OnAction();
-    }
 }

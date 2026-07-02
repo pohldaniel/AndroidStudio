@@ -13,10 +13,9 @@ public class NativeLibrary {
     public static native void initStates();
     public static native void wgpConfigureSurface(Surface surface);
     public static native void resize(Surface surface, int width, int height);
-
     public static native void start(Surface surface);
     public static native void stop();
     public static native void destroy();
-    public static native void OnButton();
+    public static native void OnButton(int button);
     public static native void OnAction();
 }

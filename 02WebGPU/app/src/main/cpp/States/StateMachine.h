@@ -61,7 +61,7 @@ public:
 	virtual void OnScroll(double xOffset, double yOffset);
     virtual void OnKeyDown(const Event::KeyboardEvent& event);
 	virtual void OnKeyUp(const Event::KeyboardEvent& event);
-	virtual void OnButton();
+	virtual void OnButton(const Event::MouseButtonEvent& event);
 
 protected:
 

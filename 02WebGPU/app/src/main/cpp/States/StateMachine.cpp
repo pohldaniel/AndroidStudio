@@ -97,6 +97,6 @@ void State::OnKeyUp(const Event::KeyboardEvent& event){
 	
 }
 
-void State::OnButton(){
+void State::OnButton(const Event::MouseButtonEvent& event){
 
 }

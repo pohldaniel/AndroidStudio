@@ -10,6 +10,8 @@ const glm::mat4 Camera::BIAS(0.5f,  0.0f, 0.0f, 0.0f,
                              0.0f,  0.0f, 1.0f, 0.0f,
                              0.5f,  0.5f, 0.0f, 1.0f);
 
+const glm::mat4 Camera::IDENTITY = glm::mat4(1.0f);
+
 Camera::Camera(){
 	
 	WORLD_XAXIS = glm::vec3(1.0f, 0.0f, 0.0f);

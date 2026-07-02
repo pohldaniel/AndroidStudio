@@ -640,6 +640,32 @@ void wgpShutDown() {
     wgpContext.device = nullptr;
 }
 
+void wgpCleanState() {
+    wgpPipelineLayoutsRelease();
+    wgpPipelinesRelease();
+    wgpShaderModulesRelease();
+
+    if (wgpContext.samplers.count(SS_0)) {
+        wgpuSamplerRelease(wgpContext.samplers.at(SS_0));
+        wgpContext.samplers.erase(SS_0);
+    }
+
+    if (wgpContext.samplers.count(SS_1)) {
+        wgpuSamplerRelease(wgpContext.samplers.at(SS_1));
+        wgpContext.samplers.erase(SS_1);
+    }
+
+    if (wgpContext.samplers.count(SS_2)) {
+        wgpuSamplerRelease(wgpContext.samplers.at(SS_2));
+        wgpContext.samplers.erase(SS_2);
+    }
+
+    wgpContext.clearColor = { 0.2f, 0.2f, 0.2f, 1.0f };
+    wgpSetSurfaceColorFormat(WGPUTextureFormat::WGPUTextureFormat_RGBA8Unorm);
+    //wgpContext.colorFormat =  wgpMatchingFormat(wgpContext.surfaceCapabilities, WGPUTextureFormat::WGPUTextureFormat_RGBA8Unorm);
+    return;
+}
+
 void wgpSamplersRelease() {
     for (auto& it : wgpContext.samplers) {
         wgpuSamplerRelease(it.second);
@@ -664,7 +690,7 @@ void wgpPipelinesRelease() {
 
     for (auto& it : wgpContext.renderPipelines) {
         WGPUBindGroupLayout bindGroupLayout = wgpuRenderPipelineGetBindGroupLayout(it.second, index);
-        while (bindGroupLayout != prevBindGroupLayout) {
+        while (bindGroupLayout && bindGroupLayout != prevBindGroupLayout) {
             prevBindGroupLayout = bindGroupLayout;
             wgpuBindGroupLayoutRelease(bindGroupLayout);
             index++;
@@ -680,7 +706,7 @@ void wgpPipelinesRelease() {
 
     for (auto& it : wgpContext.computePipelines) {
         WGPUBindGroupLayout bindGroupLayout = wgpuComputePipelineGetBindGroupLayout(it.second, index);
-        while (bindGroupLayout != prevBindGroupLayout) {
+        while (bindGroupLayout && bindGroupLayout != prevBindGroupLayout) {
             prevBindGroupLayout = bindGroupLayout;
             wgpuBindGroupLayoutRelease(bindGroupLayout);
             index++;

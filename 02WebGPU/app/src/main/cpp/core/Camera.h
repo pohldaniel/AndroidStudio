@@ -11,6 +11,7 @@ public:
 
 	static const glm::mat4 BIAS_SHIFT_Z;
 	static const glm::mat4 BIAS;
+	static const glm::mat4 IDENTITY;
 
 	Camera();
 	Camera(const glm::vec3& eye, const glm::vec3& target, const glm::vec3& up);
@@ -47,7 +48,7 @@ public:
 	
 	static glm::mat4 GetNormalMatrix(const glm::mat4& m);
 	static glm::mat4 GetRotationMatrix(const glm::mat4& viewMatrix);
-	
+
 private:
 
     void rotateFirstPerson(float yaw, float pitch);

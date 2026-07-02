@@ -28,7 +28,7 @@ public:
     void resize(int deltaW, int deltaH) override;
 
     void OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor);
-    void OnButton() override;
+    void OnButton(const Event::MouseButtonEvent& event) override;
 
 private:
 

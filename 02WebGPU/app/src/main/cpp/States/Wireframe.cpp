@@ -1,18 +1,15 @@
+#include <WebGPU/WgpContext.h>
 #include <States/Collada.h>
-#include "WgpContext.h"
+#include <States/DefferedRendering.h>
+
 #include "Wireframe.h"
-#include "Logging.h"
+
 Wireframe::Wireframe(StateMachine& machine) : State(machine, States::WIREFRAME) {
-    StateMachine::DisableWireframe();
-
-
     m_camera.perspective(glm::radians(45.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);
-    m_camera.lookAt(glm::vec3(1.0f, 2.0f, 4.0f), glm::vec3(0.2f, 0.2f, 1.5f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    m_camera.lookAt(glm::vec3(1.0f, 2.0f, 4.0f) * 2.0f, glm::vec3(0.2f, 0.2f, 1.5f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     m_camera.setRotationSpeed(0.125f);
     m_camera.setMovingSpeed(10.0f);
-
-    LOGI("################");
 
     m_dragon.loadModel("models/dragon/dragon.obj", glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, glm::vec3(0.0f, -1.0f, 0.0f), 0.1f, false, false, false, false, false, true);
     m_dragon.rewind();
@@ -20,6 +17,8 @@ Wireframe::Wireframe(StateMachine& machine) : State(machine, States::WIREFRAME) 
 
     m_wgpBuffer.createBuffer(sizeof(Uniforms), WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform);
 
+    wgpSetSurfaceColorFormat(WGPUTextureFormat::WGPUTextureFormat_RGBA8UnormSrgb);
+    wgpContext.setClearColor({1.0f, 1.0f, 1.0f, 1.0f});
     wgpContext.addSahderModule("PTN", "shader/shader.wgsl");
     wgpContext.createRenderPipeline("PTN", "RP_PTNC", VL_PTNC, std::bind(&Wireframe::OnBindGroupLayouts, this));
 
@@ -97,13 +96,24 @@ void Wireframe::resize(int deltaW, int deltaH) {
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);
 }
 
-void Wireframe::OnButton() {
-    wgpPipelineLayoutsRelease();
-    wgpPipelinesRelease();
-    wgpShaderModulesRelease();
+void Wireframe::OnButton(const Event::MouseButtonEvent& event) {
 
-    m_isRunning = false;
-    m_machine.addStateAtBottom(new Collada(m_machine));
+    if(event.button == Event::MouseButtonEvent::BUTTON_LEFT){
+        StateMachine::DisableWireframe();
+        wgpCleanState();
+        m_isRunning = false;
+        m_machine.addStateAtBottom(new Collada(m_machine));
+    }
+
+    if(event.button == Event::MouseButtonEvent::BUTTON_RIGHT){
+        StateMachine::DisableWireframe();
+        wgpCleanState();
+        m_isRunning = false;
+        m_machine.addStateAtBottom(new DefferedRendering(m_machine));
+    }
+
+    if(event.button == Event::MouseButtonEvent::BUTTON_MIDDLE)
+        StateMachine::ToggleWireframe();
 }
 
 std::vector <WGPUBindGroupLayout> Wireframe::OnBindGroupLayouts() {
