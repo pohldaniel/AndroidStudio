@@ -36,6 +36,7 @@ public:
     void setWindow(ANativeWindow* window);
     void pause();
     void resume();
+    ANativeWindow* getWindow();
 
 private:
 
@@ -50,7 +51,8 @@ private:
     std::condition_variable m_blockUiThreadCv;
     std::condition_variable m_readyToRenderCv;
 
-    ANativeWindow* m_window;
+    std::atomic<ANativeWindow*> m_window;
+
     const DeltaClock& deltaClock;
     StateMachine& stateMachine;
 };

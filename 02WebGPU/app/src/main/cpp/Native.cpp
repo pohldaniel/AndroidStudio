@@ -22,65 +22,93 @@
 
 #include "States/StateMachine.h"
 #include "States/Collada.h"
+#include "States/Wireframe.h"
+#include "States/DeferredRendering.h"
+#include "States/ComputeParticleLogo.h"
+#include "States/VolumeRendering.h"
 
 #include "core/Event.h"
 
 #include "DeltaClock.h"
 #include "Logging.h"
 
-DeltaClock mFrameClock;
+DeltaClock DeltaClock;
 RenderThread* renderThread = nullptr;
-StateMachine* Machine= nullptr;
+StateMachine* stateMachine= nullptr;
+States currentState = States::COLLADA;
+
+State* recoverState(States crrntStt){
+    switch(crrntStt){
+        case States::COLLADA:
+            return new Collada(*stateMachine);
+        case WIREFRAME:
+            return new Wireframe(*stateMachine);
+        case DEFERRED_RENDERING:
+            return new DeferredRendering(*stateMachine);
+        case COMPUTE_PARTICLE_LOGO:
+            return new ComputeParticleLogo(*stateMachine);
+        case VOLUME_RENDERING:
+            return new VolumeRendering(*stateMachine);
+    }
+}
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_wgpInit(JNIEnv* env, jclass clazz, jobject assetManager) {
     AssetIO::Init(AAssetManager_fromJava(env, assetManager));
     wgpInit();
     float fdt = 0.0f;
-    Machine = new StateMachine( mFrameClock.ReadDelta(), fdt);
+    stateMachine = new StateMachine( DeltaClock.ReadDelta(), fdt);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_initStates(JNIEnv* env, jclass clazz){
-    if(!Machine->isRunning())
-        Machine->addStateAtTop(new Collada(*Machine));
+    if(!stateMachine->isRunning())
+        stateMachine->addStateAtTop(recoverState(currentState));
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_wgpConfigureSurface(JNIEnv* env, jclass clazz, jobject surface) {
-    wgpConfigureSurface((void*)ANativeWindow_fromSurface(env, surface));
-    if(Machine->isRunning())
-        Machine->getStates().top()->resize(0, 0);
+    ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
+    wgpConfigureSurface(static_cast<void*>(window));
+    ANativeWindow_release(window);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_resize(JNIEnv* env, jclass clazz, jobject surface, jint width, jint height) {
     wgpResize((void*)ANativeWindow_fromSurface(env, surface), width, height);
+    if(stateMachine->isRunning())
+        stateMachine->getStates().top()->resize(0, 0);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_start(JNIEnv* env, jclass clazz, jobject surface) {
     if (renderThread == nullptr) {
-        mFrameClock.SetMaxDelta(0.05f);
-        mFrameClock.Reset();
-        renderThread = new RenderThread(mFrameClock, *Machine);
+        DeltaClock.SetMaxDelta(0.05f);
+        DeltaClock.Reset();
+        renderThread = new RenderThread(DeltaClock, *stateMachine);
         renderThread->start();
     }
-
-    ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
-    renderThread->setWindow(window);
+    renderThread->setWindow(ANativeWindow_fromSurface(env, surface));
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_stop(JNIEnv *env, jclass clazz) {
     if (renderThread != nullptr) {
+        ANativeWindow* window = renderThread->getWindow();
+
         renderThread->setWindow(nullptr);
+        renderThread->stop();
+
+        delete renderThread;
+        renderThread = nullptr;
+
+        ANativeWindow_release(window);
     }
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_destroy(JNIEnv *env, jclass clazz) {
     wgpShutDown();
-    delete Machine;
-    delete renderThread;
+    delete stateMachine;
+    stateMachine = nullptr;
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_OnButton(JNIEnv *env, jclass clazz, jint button) {
     renderThread->pause();
-    if(Machine->isRunning()) {
+    if(stateMachine->isRunning()) {
         Event event;
         event.type = Event::MOUSEBUTTONDOWN;
         event.data.mouseButton.x = 0;
@@ -89,9 +117,9 @@ extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_OnButton
                                         button == 1 ?  Event::MouseButtonEvent::MouseButton::BUTTON_MIDDLE :
                                         Event::MouseButtonEvent::MouseButton::BUTTON_RIGHT;
 
-        Machine->getStates().top()->OnButton(event.data.mouseButton);
-        Machine->popState();
+        stateMachine->getStates().top()->OnButton(event.data.mouseButton);
+        stateMachine->popState();
     }
-
     renderThread->resume();
+    currentState = stateMachine->getCurrentState();
 }

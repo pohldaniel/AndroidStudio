@@ -79,8 +79,8 @@ void Collada::OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderP
     m_uniforms.projection = m_camera.getPerspectiveMatrix();
     m_uniforms.view = m_camera.getViewMatrix();
     wgpuQueueWriteBuffer(wgpContext.queue, m_wgpBuffer.getBuffer(), 0, &m_uniforms, sizeof(Uniforms));
-
     WGPURenderPassEncoder renderPassEncoder = wgpuCommandEncoderBeginRenderPass(wgpContext.commandEncoder, &renderPassDescriptor);
+
     wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_ANIMATION"));
     m_wgpCowboy.draw(renderPassEncoder);
 

@@ -28,5 +28,4 @@ class Renderer {
     public void onContextDestroyed(){
         NativeLibrary.destroy();
     }
-
 }

@@ -49,6 +49,13 @@ void StateMachine::resizeState(int deltaW, int deltaH, States state) {
 	}
 }
 
+States StateMachine::getCurrentState() {
+	if (!m_states.empty()) {
+		return m_states.top()->getCurrentState();
+	}
+	return static_cast<States>(0);
+}
+
 void StateMachine::ToggleWireframe() {
 	WireframeEnabled = !WireframeEnabled;
 }

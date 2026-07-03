@@ -2,7 +2,6 @@ package com.android.webgpu;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.widget.Button;
 
@@ -11,21 +10,23 @@ import androidx.appcompat.widget.Toolbar;
 
 public class MainActivity extends AppCompatActivity {
     private final String[] appStates = {"Collada", "Wireframe", "Deferred", "Particle", "Volume"};
-    private int currentStateIndex = 0;
-    private Toolbar toolbar;
-    View view;
+    private static int CurrentStateIndex = 0;
+    private View view;
 
+    //will trigger by rotate as well
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
-        FrameLayout container = findViewById(R.id.webgpu_container);
+        FrameLayout webgpuContainer = findViewById(R.id.webgpu_container);
 
         view = new View(this);
         view.initRenderer(getAssets());
-        container.addView(view);
-        toolbar = findViewById(R.id.toolbar);
+        webgpuContainer.addView(view);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setTitle(appStates[CurrentStateIndex]);
         setSupportActionBar(toolbar);
 
         Button buttonLeft = findViewById(R.id.button_left);
@@ -35,36 +36,34 @@ public class MainActivity extends AppCompatActivity {
         if (buttonLeft != null && buttonRight != null && buttonAction != null) {
             int length = appStates.length - 1;
             buttonAction.setVisibility(View.GONE);
+            buttonAction.setVisibility(CurrentStateIndex == 1 ? View.VISIBLE : View.GONE);
 
             buttonLeft.setOnClickListener(v -> {
-                if (currentStateIndex > 0) {
-                    currentStateIndex--;
-                    toolbar.setTitle(appStates[currentStateIndex]);
+                if (CurrentStateIndex > 0) {
+                    CurrentStateIndex--;
                 }else{
-                    currentStateIndex = length;
-                    toolbar.setTitle(appStates[currentStateIndex]);
+                    CurrentStateIndex = length;
                 }
-
+                toolbar.setTitle(appStates[CurrentStateIndex]);
                 NativeLibrary.OnButton(0);
-                buttonAction.setVisibility(currentStateIndex == 1 ? View.VISIBLE : View.GONE);
+                buttonAction.setVisibility(CurrentStateIndex == 1 ? View.VISIBLE : View.GONE);
             });
 
             buttonRight.setOnClickListener(v -> {
-                if (currentStateIndex < length) {
-                    currentStateIndex++;
-                    toolbar.setTitle(appStates[currentStateIndex]);
+                if (CurrentStateIndex < length) {
+                    CurrentStateIndex++;
                 }else{
-                    currentStateIndex = 0;
-                    toolbar.setTitle(appStates[currentStateIndex]);
+                    CurrentStateIndex = 0;
                 }
 
+                toolbar.setTitle(appStates[CurrentStateIndex]);
                 NativeLibrary.OnButton(2);
-                buttonAction.setVisibility(currentStateIndex == 1 ? View.VISIBLE : View.GONE);
+                buttonAction.setVisibility(CurrentStateIndex == 1 ? View.VISIBLE : View.GONE);
             });
 
-            buttonAction.setOnClickListener(v -> {
-                NativeLibrary.OnButton(1);
-            });
+            buttonAction.setOnClickListener(
+                v-> NativeLibrary.OnButton(1)
+            );
         }
     }
 

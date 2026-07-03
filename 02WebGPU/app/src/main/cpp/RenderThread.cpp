@@ -57,13 +57,8 @@ void RenderThread::resume() {
 }
 
 void RenderThread::setWindow(ANativeWindow* window) {
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        m_window = window;
-        lock.unlock();
-
-        m_readyToRenderCv.notify_one();
-    }
+    m_window.store(window, std::memory_order_release);
+    m_readyToRenderCv.notify_one();
 }
 
 void RenderThread::threadLoop() {
@@ -90,4 +85,8 @@ void RenderThread::threadLoop() {
         stateMachine.update();
         stateMachine.render();
     }
+}
+
+ANativeWindow* RenderThread::getWindow() {
+    return m_window.load(std::memory_order_acquire);
 }
