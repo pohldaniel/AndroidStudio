@@ -1,7 +1,7 @@
 #include <WebGPU/WgpContext.h>
 #include <WebGPU/WgpRenderer.h>
 #include <States/ComputeParticleLogo.h>
-#include <States/Collada.h>
+#include <States/BowSimulation.h>
 
 #include "AssetIO.h"
 #include "VolumeRendering.h"
@@ -81,7 +81,7 @@ void VolumeRendering::OnButton(const Event::MouseButtonEvent& event) {
     }
 
     if(event.button == Event::MouseButtonEvent::BUTTON_RIGHT){
-        m_machine.addStateAtBottom(new Collada(m_machine));
+        m_machine.addStateAtBottom(new BowSimulation(m_machine));
     }
 }
 

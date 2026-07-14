@@ -623,6 +623,8 @@ WGPUSampler wgpCreateSampler(WGPUFilterMode filterMode, WGPUAddressMode addressM
 }
 
 void wgpShutDown() {
+    if(!wgpContext.instance)
+        return;
     wgpContext.clearColor = { 0.2f, 0.2f, 0.2f, 1.0f };
     wgpContext.colorFormat = WGPUTextureFormat::WGPUTextureFormat_RGBA8Unorm;
     wgpContext.depthFormat = WGPUTextureFormat::WGPUTextureFormat_Depth24PlusStencil8;

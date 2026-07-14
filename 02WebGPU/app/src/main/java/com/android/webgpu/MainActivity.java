@@ -2,6 +2,7 @@ package com.android.webgpu;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.widget.Button;
 
@@ -9,7 +10,7 @@ import android.widget.FrameLayout;
 import androidx.appcompat.widget.Toolbar;
 
 public class MainActivity extends AppCompatActivity {
-    private final String[] appStates = {"Collada", "Wireframe", "Deferred", "Particle", "Volume"};
+    private final String[] appStates = {"Collada", "Wireframe", "Deferred", "Particle", "Volume", "Bow and Arrow"};
     private static int CurrentStateIndex = 0;
     private View view;
 
@@ -17,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        //setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.activity_main);
         FrameLayout webgpuContainer = findViewById(R.id.webgpu_container);
 
