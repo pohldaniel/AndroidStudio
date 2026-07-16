@@ -7,6 +7,8 @@
 #include <WebGPU/WgpBuffer.h>
 #include <WebGPU/WgpModel.h>
 
+#include <Nuklear/NkContext.h>
+
 #include <Shape/Shape.h>
 #include <States/StateMachine.h>
 
@@ -15,16 +17,7 @@
 #include <core/ObjModel.h>
 #include <core/TrackBall.h>
 
-#define MAX_VERTEX_MEMORY (1024u * 1024u)
-#define MAX_INDEX_MEMORY (256u * 1024u)
-
 class BowSimulation : public State {
-
-	struct nk_webgpu_vertex {
-		float position[2];
-		float uv[2];
-		uint8_t col[4];
-	};
 
 	struct JoystickResult {
 		float x = 0.0f;
@@ -58,6 +51,7 @@ public:
     void resize(int deltaW, int deltaH) override;
 
     void OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor);
+	void OnFillBuffer(nk_context& nkCntxt);
     void OnButton(const Event::MouseButtonEvent& event) override;
 
 private:
@@ -90,4 +84,10 @@ private:
 	void init_reticle(Reticle& r, float screen_w, float screen_h);
 	void update_reticle(Reticle& r, float joystick_x, float joystick_y, bool is_drawing_bow, float dt, float screen_w, float screen_h);
 	void draw_reticle(struct nk_context* ctx, const Reticle& r, float screen_w, float screen_h);
+
+	struct nk_image playIcon;
+	struct nk_vec2 current_pos;
+
+	const float BASE_ROW_DYN = 30.0f;
+	const float BASE_ROW_STAT = 32.0f;
 };

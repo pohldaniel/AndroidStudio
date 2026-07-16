@@ -16,6 +16,7 @@
 
 #include "RenderThread.h"
 #include "AssetIO.h"
+#include "InputTouch.h"
 
 #include <WebGPU/WgpContext.h>
 #include <WebGpu/WgpTexture.h>
@@ -36,13 +37,7 @@
 DeltaClock DeltaClock;
 RenderThread* renderThread = nullptr;
 StateMachine* stateMachine= nullptr;
-States currentState = States::COLLADA;
-
-#define MAX_TOUCH_POINTERS 5
-
-float c_touch_x[MAX_TOUCH_POINTERS] = {0.0f};
-float c_touch_y[MAX_TOUCH_POINTERS] = {0.0f};
-bool c_touch_active[MAX_TOUCH_POINTERS] = {false};
+States currentState = States::BOW_SIMULATION;
 
 State* recoverState(States crrntStt){
     switch(crrntStt){
@@ -136,12 +131,12 @@ extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_OnButton
 extern "C" JNIEXPORT void JNICALL
 Java_com_android_webgpu_NativeLibrary_nativeSendTouch(JNIEnv* env, jclass clazz, jint pointer_id, jfloat x, jfloat y, jint action_type) {
 
-    c_touch_x[pointer_id] = x;
-    c_touch_y[pointer_id] = y;
+    touchStates[pointer_id].touchX = x;
+    touchStates[pointer_id].touchY = y;
 
     if (action_type == 0 || action_type == 1) {
-        c_touch_active[pointer_id] = true;
+        touchStates[pointer_id].touchActive = true;
     } else if (action_type == 2) {
-        c_touch_active[pointer_id] = false;
+        touchStates[pointer_id].touchActive = false;
     }
 }
