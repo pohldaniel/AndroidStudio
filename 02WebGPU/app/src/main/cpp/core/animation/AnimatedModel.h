@@ -30,36 +30,46 @@ class MemoryIOSystem;
 class AnimatedModel : public Model {
 
 	friend class AnimatedMesh;
+	friend class AnimationController;
 
 public:
 
 	AnimatedModel();
-	virtual ~AnimatedModel();
+	~AnimatedModel() override;
 
 	void update(float dt);
 	void updateSkinning();
-	void applyBindpose(bool onTransformChanged = false);
+	void applyBindPose(bool onTransformChanged = false);
 	void cleanup();
 
-	void loadModelAssimp(MemoryIOSystem* memoryIOSystem, const std::string& path, const short addVirtualRoots = 0, const bool reverseBoneList = false);
-	void loadModel(const std::string& path, const short addVirtualRoots = 0);
+	void loadModelAssimp(const std::string& path, short addVirtualRoots = 0, bool reverseBoneList = false);
+	void loadModel(const std::string& path, short addVirtualRoots = 0);
 	
-	void rotate(const float pitch, const float yaw, const float roll);
-	void scale(const float sx, const float sy, const float sz);
-	void translate(const float dx, const float dy, const float dz);
+	void rotate(float pitch, float yaw, float roll);
+	void scale(float sx, float sy, float sz);
+	void translate(float dx, float dy, float dz);
+	void translateRelative(float dx, float dy, float dz);
 
-	void setScale(const float sx, const float sy, const float sz);
+	void setScale(float sx, float sy, float sz);
+	void setRotation(float pitch, float yaw, float roll);
 
 	AnimationState* findAnimationState(const Animation& animation) const;
+	AnimationState* findAnimationState(const std::string& name) const;
 	AnimationState* addAnimationState(const Animation& animation);
+	AnimationState* addAnimationStateFront(const Animation& animation);
 	
 	AnimationState* getAnimationState(size_t index) const;
 	void removeAnimationState(const Animation& animation);
+	void removeAnimationState(const std::string& name);
+	void removeAnimationState(const AnimationState* state);
 	void removeAllAnimationStates();
 
 	unsigned int getStride() const override;
 	const Mesh* getMesh(unsigned short index = 0u) const;
 	const std::vector<Mesh*>& getMeshes() const;
+	Mesh* mesh(unsigned short index = 0u) const;
+
+	std::vector<std::shared_ptr<AnimationState>>& animationStates();
 
 private:
 
@@ -70,10 +80,10 @@ private:
 
 	unsigned int m_numberOfTriangles, m_numberOfMeshes, m_stride;
 
-	bool m_hasTextureCoords, m_hasNormals, m_hasTangents, m_hasMaterial;
+	bool m_hasTextureCords, m_hasNormals, m_hasTangents, m_hasMaterial;
 	bool m_isStacked;
 
-	bool m_animationOrderDirty;
+	bool m_animationOrderDirty, m_hasAnimationController;
 	std::vector<std::shared_ptr<AnimationState>> m_animationStates;
 
 	static bool CompareAnimationStates(const std::shared_ptr<AnimationState>& lhs, const std::shared_ptr<AnimationState>& rhs);
@@ -86,27 +96,30 @@ class AnimatedMesh : public Mesh {
 public:
 
 	AnimatedMesh(AnimatedModel* model);
-	virtual ~AnimatedMesh();
+	~AnimatedMesh() override;
 
-	void update(float dt);
 	void updateSkinning();
-	void applyBindpose(bool onTransformChanged = false);
+	void applyBindPose(bool transformChanged = false);
 	void createBones();
 	void cleanup();
 
 	
-	void rotate(const float pitch, const float yaw, const float roll);
-	void scale(const float sx, const float sy, const float sz);
-	void translate(const float dx, const float dy, const float dz);
+	void rotate(float pitch, float yaw, float roll);
+	void scale(float sx, float sy, float sz);
+	void translate(float dx, float dy, float dz);
+	void translateRelative(float dx, float dy, float dz);
 
-	void setScale(const float sx, const float sy, const float sz);
+	void setScale(float sx, float sy, float sz);
+	void setRotation(float pitch, float yaw, float roll);
 
     const std::vector<BoneDescription>& getBoneDescriptions() const;
 	const std::vector<std::array<float, 4>>& getWeights() const;
 	const std::vector<std::array<unsigned int, 4>>& getJoints() const;
 	const glm::mat4* getSkinMatrices() const;
-	const unsigned short getNumBones() const;
-	const bool hasMaterial() const;
+	const glm::mat4& getSkinMatrix(size_t index = 0u) const;
+	unsigned short getNumBones() const;
+	const Bone& getBone(size_t index = 0u) const;
+	bool hasMaterial() const;
 	const Material& getMaterial() const;
 
 	std::vector<BoneDescription>& boneDescriptions() const;
@@ -114,6 +127,7 @@ public:
 	std::vector<unsigned int>& indexBuffer() const;
 	std::vector<std::array<float, 4>>& weights() const;
 	std::vector<std::array<unsigned int, 4>>& joints() const;
+	glm::mat4* skinMatrices() const;
 	unsigned int& stride() const;
 	Bone**& bones() const;
 	

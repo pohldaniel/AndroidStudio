@@ -23,8 +23,8 @@ struct AnimationKeyFrame {
 };
 
 struct AnimationTrack {
-
 	void findKeyFrameIndex(float time, size_t& index) const;
+
 	std::string m_name;
 	unsigned char m_channelMask;
 	std::vector<AnimationKeyFrame> m_keyFrames;
@@ -34,14 +34,15 @@ class MemoryIOSystem;
 class Animation {
 
 	friend class AnimatedModel;
+	friend class AnimationController;
 
 public:
 
 	Animation();
 	~Animation();
 
-	void loadAnimationAssimp(MemoryIOSystem* memoryIOSystem, const std::string& filename, const std::string& sourceName, const std::string& destName);
-	void loadAnimation(std::string filename);
+	void loadAnimationAssimp(const std::string& filename, const std::string& sourceName, const std::string& destName, unsigned int startTick = 0u, unsigned int endTick = 0u);
+	void loadAnimation(const std::string& filename);
 
 	AnimationTrack* createTrack(const std::string& name);
 	AnimationTrack* findTrack(const std::string& name) const;
@@ -49,16 +50,16 @@ public:
 	const std::string& getAnimationName() const;
 	float getLength() const;
 	const std::map<std::string, AnimationTrack>& getTracks() const;
-	const std::vector<AnimationTrack> getAnimationTracks() const;
 	size_t getNumTracks() const;
 
 	std::string& animationName() const;
 	float& length() const;
 	std::map<std::string, AnimationTrack>& tracks() const;
 
-	void setPositionOfTrack(const std::string& name, const float x, const float y, const float z);
-	void setScaleOfTrack(const std::string& name, const float sx, const float sy, const float sz);
-	void scaleTrack(const std::string& name, const float sx, const float sy, const float sz);
+	void setPositionOfTrack(const std::string& name, float x, float y, float z) const;
+	void setScaleOfTrack(const std::string& name, float sx, float sy, float sz) const;
+	void scaleTrack(const std::string& name, float sx, float sy, float sz) const;
+	void shift(unsigned int ticks);
 
 private:
 

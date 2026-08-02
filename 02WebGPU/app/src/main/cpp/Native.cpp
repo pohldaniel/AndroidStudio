@@ -19,7 +19,7 @@
 #include "InputTouch.h"
 
 #include <WebGPU/WgpContext.h>
-#include <WebGpu/WgpTexture.h>
+#include <WebGPU/WgpTexture.h>
 
 #include <States/StateMachine.h>
 #include <States/Collada.h>
@@ -28,6 +28,7 @@
 #include <States/ComputeParticleLogo.h>
 #include <States/VolumeRendering.h>
 #include <States/BowSimulation.h>
+#include <States/Isometric.h>
 
 #include <core/Event.h>
 
@@ -37,7 +38,7 @@
 DeltaClock DeltaClock;
 RenderThread* renderThread = nullptr;
 StateMachine* stateMachine= nullptr;
-States currentState = States::BOW_SIMULATION;
+States currentState = States::COLLADA;
 
 State* recoverState(States crrntStt){
     switch(crrntStt){
@@ -53,6 +54,8 @@ State* recoverState(States crrntStt){
             return new VolumeRendering(*stateMachine);
         case States::BOW_SIMULATION:
             return new BowSimulation(*stateMachine);
+        case States::ISOMETRIC:
+            return new Isometric(*stateMachine);
     }
 }
 

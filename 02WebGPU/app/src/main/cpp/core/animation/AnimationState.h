@@ -8,10 +8,7 @@
 #define	EPSILON  1e-6f
 
 enum AnimationBlendMode {
-	ABM_NONE = 0,
-	ABM_LERP,
-	ABM_ADDITIVE,
-	ABM_FADE
+	ABM_LERP = 0
 };
 
 struct AnimationStateTrack {
@@ -19,7 +16,7 @@ struct AnimationStateTrack {
 	~AnimationStateTrack();
 
 	const AnimationTrack* m_track;
-	Bone* m_node;
+	Bone* m_bone;
 	float m_weight;
 	size_t m_keyFrame;
 
@@ -37,32 +34,26 @@ public:
 
 	void setStartBone(Bone* startBone);
 	void setLooped(bool looped);
-	void setBackward(bool backward);
 	void setWeight(float weight);
 	void setBlendMode(AnimationBlendMode mode);
 	void setTime(float time);
-	void setBoneWeight(size_t index, float weight, bool recursive = false);
-	void setBoneWeight(const std::string& name, float weight, bool recursive = false);
-	void addWeight(float delta);
 	void addTime(float dt);
 	void setBlendLayer(unsigned char layer);
-	void setFadeLayerLength(float length);
 
 	const Animation& getAnimation() const;
-	const AnimationBlendMode getAnimationBlendMode() const;
+	AnimationBlendMode getAnimationBlendMode() const;
 
 	Bone* getStartBone() const;
 	float getBoneWeight(size_t index) const;
 	float getBoneWeight(const std::string& name) const;
 
-	size_t findTrackIndex(Bone* node) const;
+	size_t findTrackIndex(Bone* bone) const;
 	size_t findTrackIndex(const std::string& name) const;
 
 	bool isEnabled() const;
 	bool isLooped() const;
 	float getWeight() const;
 	float getTime() const;
-	const float getRestTime() const;
 	float getLength() const;
 	unsigned char getBlendLayer() const;
 
@@ -72,10 +63,8 @@ public:
 private:
 
 	void applyToModel();
-	void applyToNodes();
 
 	std::vector<AnimationStateTrack> m_stateTracks;
-
 	const Animation& m_animation;
 	Bone* m_startBone;
 
@@ -83,12 +72,7 @@ private:
 	unsigned char m_blendLayer;
 
 	bool m_looped;
-	bool m_backward;
 	float m_blendWeight;
 
-	float m_layeredTime;
-	float m_fadeLayerLength;
-	float m_additiveDirection;
-	bool m_invertBlend;
 	AnimationBlendMode m_animationBlendMode;
 };

@@ -8,7 +8,9 @@
 
 NkContext nkContext = {};
 
-void nkInit() {
+void nkInit(float width, float height) {
+	nkContext.width = width;
+	nkContext.height = height;
 
 	nkContext.wgpVertexBuffer.createBuffer(MAX_VERTEX_MEMORY, WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst);
 	nkContext.wgpIndexBuffer.createBuffer(MAX_INDEX_MEMORY, WGPUBufferUsage_Index | WGPUBufferUsage_CopyDst);
@@ -74,7 +76,6 @@ void nkInit() {
 	nkContext.drawVertexLayoutElements[2] = { NK_VERTEX_COLOR, NK_FORMAT_R8G8B8A8, 4 * sizeof(float) };
 	nkContext.drawVertexLayoutElements[3] = { NK_VERTEX_LAYOUT_END };
 
-	
 	nkContext.convertConfig.vertex_layout = nkContext.drawVertexLayoutElements.data();
 	nkContext.convertConfig.vertex_size = 20;
 	nkContext.convertConfig.vertex_alignment = 4;
@@ -141,6 +142,9 @@ void nkInitIcon(const char* path) {
 }
 
 void nkResize(float width, float height) {
+	nkContext.width = width;
+	nkContext.height = height;
+
 	float ortho[16] = { 2.0f / width, 0.0f,   0.0f, 0.0f,
 					    0.0f, -2.0f / height, 0.0f, 0.0f,
 					    0.0f, 0.0f, -1.0f, 0.0f,
@@ -207,20 +211,25 @@ void nkShutDown() {
 	nkContext.drawVertexLayoutElements.clear();
 	nkContext.drawVertexLayoutElements.shrink_to_fit();
 	nkContext.OnFillBuffer = nullptr;
+
+    std::memset(nkContext.vertexBufferData, 0, sizeof(nkContext.vertexBufferData));
+    std::memset(nkContext.indexBufferData, 0, sizeof(nkContext.indexBufferData));
+    return;
 }
 
-void nkUpdateInput(int x, int y, bool button, float scrollDelta) {
+void nkUpdateInput(int x, int y, bool left, bool right, float scrollDelta) {
 	nk_input_begin(&nkContext.context);
 	nk_input_motion(&nkContext.context, x, y);
-	nk_input_button(&nkContext.context, NK_BUTTON_LEFT, x, y, button);
+	nk_input_button(&nkContext.context, NK_BUTTON_LEFT, x, y, left);
+	nk_input_button(&nkContext.context, NK_BUTTON_RIGHT, x, y, right);
 	nk_input_scroll(&nkContext.context, nk_vec2(0.0f, scrollDelta));
 	nk_input_end(&nkContext.context);
+
+	if (nkContext.OnFillBuffer)
+		nkContext.OnFillBuffer(nkContext.context);
 }
 
 void nkDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor) {
-	if (nkContext.OnFillBuffer)
-		nkContext.OnFillBuffer(nkContext.context);
-
 	nk_buffer_clear(&nkContext.vertexBuffer);
 	nk_buffer_clear(&nkContext.indexBuffer);
 
@@ -247,21 +256,17 @@ void nkDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescri
 
 		wgpuRenderPassEncoderSetBindGroup(renderPassEncoder, 0u, bindGroup, 0u, NULL);
 
-		float scissor_x = nkContext.drawCommand->clip_rect.x < 0.0f ? 0.0f : nkContext.drawCommand->clip_rect.x;
-		float scissor_y = nkContext.drawCommand->clip_rect.y < 0.0f ? 0.0f : nkContext.drawCommand->clip_rect.y;
+		float scissor_x = nkContext.drawCommand->clip_rect.x < 0.0f ? 0.0f : nkContext.drawCommand->clip_rect.x > nkContext.width ? nkContext.width : nkContext.drawCommand->clip_rect.x;
+		float scissor_y = nkContext.drawCommand->clip_rect.y < 0.0f ? 0.0f : nkContext.drawCommand->clip_rect.y > nkContext.height ? nkContext.height : nkContext.drawCommand->clip_rect.y;
 		float scissor_w = nkContext.drawCommand->clip_rect.w;
 		float scissor_h = nkContext.drawCommand->clip_rect.h;
 
-		if (scissor_x + scissor_w > static_cast<float>(wgpWidth)) {
-			scissor_w = static_cast<float>(wgpWidth) - scissor_x;
+		if (scissor_x + scissor_w > nkContext.width) {
+			scissor_w = nkContext.width - scissor_x;
 		}
 
-		if (scissor_y + scissor_h > static_cast<float>(wgpHeight)) {
-			scissor_h = static_cast<float>(wgpHeight) - scissor_y;
-		}
-
-		if (scissor_w <= 0.0f || scissor_h <= 0.0f) {
-			continue;
+		if (scissor_y + scissor_h > nkContext.height) {
+			scissor_h = nkContext.height - scissor_y;
 		}
 
 		wgpuRenderPassEncoderSetScissorRect(renderPassEncoder, (uint32_t)scissor_x, (uint32_t)scissor_y, (uint32_t)scissor_w, (uint32_t)scissor_h);

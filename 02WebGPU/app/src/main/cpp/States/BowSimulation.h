@@ -2,7 +2,7 @@
 
 #include <webgpu.h>
 
-#include <WebGpu/WgpData.h>
+#include <WebGPU/WgpData.h>
 #include <WebGPU/WgpTexture.h>
 #include <WebGPU/WgpBuffer.h>
 #include <WebGPU/WgpModel.h>

@@ -1,5 +1,6 @@
 #include <WebGPU/WgpContext.h>
 #include <WebGPU/WgpRenderer.h>
+
 #include <States/VolumeRendering.h>
 #include <States/Collada.h>
 
@@ -18,7 +19,7 @@ BowSimulation::BowSimulation(StateMachine& machine) : State(machine, States::BOW
 	m_camera.setMovingSpeed(5.0f);
 	m_camera.setRotationSpeed(0.1f);
 
-	nkInit();
+	nkInit(static_cast<float>(wgpWidth), static_cast<float>(wgpHeight));
 	nkInitFont("fonts/upheavtt.ttf");
 	nkInitIcon("textures/ui-icons-buttons-set-blue.png");
 	playIcon = nk_subimage_ptr(nkContext.bindgroupIcon, 960, 560, nk_rect(30.0f, 25.0f, 120.0f, 122.0f));
@@ -38,7 +39,7 @@ BowSimulation::BowSimulation(StateMachine& machine) : State(machine, States::BOW
 }
 
 BowSimulation::~BowSimulation() {
-	nkShutDown();
+
 }
 
 void BowSimulation::fixedUpdate() {
@@ -46,7 +47,7 @@ void BowSimulation::fixedUpdate() {
 }
 
 void BowSimulation::update() {
-	nkUpdateInput((int)touchStates[0].touchX, (int)touchStates[0].touchY, 1, m_scrollDelta);
+	nkUpdateInput((int)touchStates[0].touchX, (int)touchStates[0].touchY, true, false, m_scrollDelta);
 	m_scrollDelta = 0.0f;
     m_trackball.idle();
 }
@@ -183,6 +184,7 @@ void BowSimulation::resize(int deltaW, int deltaH) {
 
 void BowSimulation::OnButton(const Event::MouseButtonEvent& event) {
     wgpCleanState();
+	nkShutDown();
     m_isRunning = false;
 
     if(event.button == Event::MouseButtonEvent::BUTTON_LEFT){

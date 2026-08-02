@@ -30,7 +30,7 @@ struct Uniforms {
 fn vs_main(in: VertexInput) -> VertexOutput {
 	var out: VertexOutput;
 	out.position = uniforms.projection * uniforms.view * uniforms.model * vec4f(in.position, 1.0);
-	out.normal = (uniforms.model * vec4f(in.normal, 0.0)).xyz;
+	out.normal = in.normal;
 	out.texcoord = in.texcoord;
 	out.color = uniforms.color;
 	return out;
@@ -39,5 +39,5 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-	return textureSample(texture, smplr, in.texcoord);
+	return textureSample(texture, smplr, in.texcoord * 100.0);
 }

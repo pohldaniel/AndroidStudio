@@ -11,7 +11,7 @@
 #ifdef NUKLEAR_IMPLEMENTATION
 	#define NK_IMPLEMENTATION
 #endif
-
+#include <stdarg.h>
 #include <nuklear/nuklear.h>
 #include <webgpu.h>
 
@@ -60,12 +60,12 @@ struct NkContext;
 extern NkContext nkContext;
 
 extern "C" {
-	void nkInit();
+	void nkInit(float width, float height);
 	void nkInitFont(const char* path = nullptr);
 	void nkInitIcon(const char* path);	
 	void nkResize(float width, float height);
 	void nkShutDown();
-	void nkUpdateInput(int x, int y, bool button, float scrollDelta);
+	void nkUpdateInput(int x, int y, bool left, bool right, float scrollDelta);
 	void nkDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor);
 	
 	void nkCreateBindGroup(const WgpTexture& texture, WGPUBindGroup& bindgroup);
@@ -87,6 +87,8 @@ struct NkContext {
 	struct nk_font* font = nullptr;
 	const struct nk_draw_command* drawCommand = nullptr;
     std::vector<nk_draw_vertex_layout_element> drawVertexLayoutElements;
+	float width;
+	float height;
 
 	uint8_t vertexBufferData[MAX_VERTEX_MEMORY];
 	uint8_t indexBufferData[MAX_INDEX_MEMORY];
@@ -102,4 +104,5 @@ struct NkContext {
 	WgpTexture wgpTextureNull, wgpTextureFont, wgpTextureIcon;
 
 	std::function<void(nk_context& nkCntxt)> OnFillBuffer = nullptr;
+	const void* activeWidget = nullptr;
 };

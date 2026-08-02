@@ -12,17 +12,20 @@
 #include "Bone.h"
 #include "AnimatedModel.h"
 
+#include "AssetIO.h"
+
 bool AnimatedModel::CompareAnimationStates(const std::shared_ptr<AnimationState>& lhs, const std::shared_ptr<AnimationState>& rhs) {
 	return lhs->getBlendLayer() < rhs->getBlendLayer();
 }
 
 AnimatedModel::AnimatedModel() {
-	m_hasTextureCoords = false;
+	m_hasTextureCords = false;
 	m_hasNormals = false;
 	m_hasTangents = false;
 	m_hasMaterial = false;
 	m_isStacked = false;
 	m_animationOrderDirty = true;
+	m_hasAnimationController = false;
 
 	m_numberOfTriangles = 0u;
 	m_numberOfMeshes = 0u;
@@ -47,20 +50,25 @@ void AnimatedModel::update(float dt) {
 		m_animationOrderDirty = false;
 	}
 
-	for (std::vector<Mesh*>::iterator mesh = m_meshes.begin(); mesh != m_meshes.end(); mesh++) {
-		static_cast<AnimatedMesh*>(*mesh)->update(dt);
+	for(auto& animationState : m_animationStates) {
+		AnimationState* state = animationState.get();
+		if (state->isEnabled()) {
+			if(!m_hasAnimationController)
+				state->addTime(dt);
+			state->apply();
+		}
 	}
 }
 
 void AnimatedModel::updateSkinning() {
-	for (std::vector<Mesh*>::iterator mesh = m_meshes.begin(); mesh != m_meshes.end(); mesh++) {
-		static_cast<AnimatedMesh*>(*mesh)->updateSkinning();
+	for (auto& mesh : m_meshes) {
+		static_cast<AnimatedMesh*>(mesh)->updateSkinning();
 	}
 }
 
-void AnimatedModel::applyBindpose(bool onTransformChanged) {
-	for (std::vector<Mesh*>::iterator mesh = m_meshes.begin(); mesh != m_meshes.end(); mesh++) {
-		static_cast<AnimatedMesh*>(*mesh)->applyBindpose(onTransformChanged);
+void AnimatedModel::applyBindPose(bool onTransformChanged) {
+	for (auto& mesh : m_meshes) {
+		static_cast<AnimatedMesh*>(mesh)->applyBindPose(onTransformChanged);
 	}
 }
 
@@ -103,19 +111,24 @@ void AnimatedModel::loadModel(const std::string& path, const short addVirtualRoo
 	mesh->createBones();
 }
 
-void AnimatedModel::loadModelAssimp(MemoryIOSystem* memoryIOSystem, const std::string& path, const short addVirtualRoots, const bool reverseBoneList) {
+void AnimatedModel::loadModelAssimp(const std::string& path, const short addVirtualRoots, const bool reverseBoneList) {
+	uint8_t* data; uint32_t size;
+	AssetIO::LoadAsset(path.c_str(), data, size);
+
+	MemoryIOSystem* memoryIOSystem = new MemoryIOSystem();
+	memoryIOSystem->AddFile(path, std::vector<char>{data, data + size});
 
 	bool exportTangents = false;
 
 	Assimp::Importer importer;
 	importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
-	importer.SetPropertyBool(AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES, false);
 	importer.SetIOHandler(memoryIOSystem);
 
 	const aiScene* pScene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
 
 	if (!pScene) {
 		std::cout << path << "  " << importer.GetErrorString() << std::endl;
+		AssetIO::Free(data);
 		return;
 	}
 
@@ -132,11 +145,11 @@ void AnimatedModel::loadModelAssimp(MemoryIOSystem* memoryIOSystem, const std::s
 		m_meshes.push_back(new AnimatedMesh(this));
 		mesh = static_cast<AnimatedMesh*>(m_meshes.back());
 
-		m_isStacked ? m_hasTextureCoords = aiMesh->HasTextureCoords(0) : mesh->m_hasTextureCoords = aiMesh->HasTextureCoords(0);
+		m_isStacked ? m_hasTextureCords = aiMesh->HasTextureCoords(0) : mesh->m_hasTextureCoords = aiMesh->HasTextureCoords(0);
 		m_isStacked ? m_hasNormals = aiMesh->HasNormals() : mesh->m_hasNormals = aiMesh->HasNormals();
 		m_isStacked ? m_hasTangents = aiMesh->HasTangentsAndBitangents()  : mesh->m_hasTangents = aiMesh->HasTangentsAndBitangents() && exportTangents;
 
-		m_isStacked ? m_stride = m_hasTangents ? 14 : (m_hasNormals && m_hasTextureCoords) ? 8 : m_hasNormals ? 6 : m_hasTextureCoords ? 5 : 3
+		m_isStacked ? m_stride = m_hasTangents ? 14 : (m_hasNormals && m_hasTextureCords) ? 8 : m_hasNormals ? 6 : m_hasTextureCords ? 5 : 3
 			: mesh->m_stride = mesh->m_hasTangents ? 14 : (mesh->m_hasNormals && mesh->m_hasTextureCoords) ? 8 : mesh->m_hasNormals ? 6 : mesh->m_hasTextureCoords ? 5 : 3;
 
 		for (unsigned int i = 0; i < aiMesh->mNumVertices; i++) {
@@ -222,6 +235,26 @@ void AnimatedModel::loadModelAssimp(MemoryIOSystem* memoryIOSystem, const std::s
 			aiNode* meshRootNode = searchNode(pScene->mRootNode, mesh->m_boneList);
 			std::vector<BoneDescription>::iterator it = std::find_if(mesh->m_boneDescriptions.begin(), mesh->m_boneDescriptions.end(), [meshRootNode](BoneDescription& boneDescription) { return strcmp(meshRootNode->mName.C_Str(), boneDescription.name.c_str()) == 0; });
 			fetchAiHierarchy(meshRootNode, mesh->m_boneDescriptions, static_cast<int>(std::distance(mesh->m_boneDescriptions.begin(), it)));
+
+			if (addVirtualRoots) {
+
+				for (size_t i = 0; i < mesh->m_boneDescriptions.size(); ++i) {
+					BoneDescription& boneDescription = mesh->m_boneDescriptions[i];
+					if (boneDescription.parentIndex != i) {
+						boneDescription.parentIndex = boneDescription.parentIndex + addVirtualRoots;
+					}else {
+						boneDescription.parentIndex = (addVirtualRoots - 1);
+					}
+				}
+
+				for (unsigned short count = 0; count < addVirtualRoots; count++) {
+					mesh->m_boneDescriptions.insert(mesh->m_boneDescriptions.begin(), BoneDescription());
+					mesh->m_boneDescriptions[0].name = "Root_" + std::to_string((addVirtualRoots - 1) - count);
+					if (count + 1 != addVirtualRoots)
+						mesh->m_boneDescriptions[0].parentIndex = (addVirtualRoots - 1) - count - 1;
+				}
+			}
+			mesh->createBones();
 		}
 
 		for (unsigned int t = 0; t < aiMesh->mNumFaces; ++t) {
@@ -230,29 +263,9 @@ void AnimatedModel::loadModelAssimp(MemoryIOSystem* memoryIOSystem, const std::s
 			mesh->m_indexBuffer.push_back(face->mIndices[1]);
 			mesh->m_indexBuffer.push_back(face->mIndices[2]);
 		}
-
 		mesh->m_drawCount = aiMesh->mNumFaces * 3;
-
-		if (addVirtualRoots) {
-
-			for (size_t i = 0; i < mesh->m_boneDescriptions.size(); ++i) {
-				BoneDescription& boneDescription = mesh->m_boneDescriptions[i];
-				if (boneDescription.parentIndex != i) {
-					boneDescription.parentIndex = boneDescription.parentIndex + addVirtualRoots;
-				}else {
-					boneDescription.parentIndex = (addVirtualRoots - 1);
-				}
-			}
-
-			for (unsigned short count = 0; count < addVirtualRoots; count++) {
-				mesh->m_boneDescriptions.insert(mesh->m_boneDescriptions.begin(), BoneDescription());
-				mesh->m_boneDescriptions[0].name = "Root_" + std::to_string((addVirtualRoots - 1) - count);
-				if (count + 1 != addVirtualRoots)
-					mesh->m_boneDescriptions[0].parentIndex = (addVirtualRoots - 1) - count - 1;
-			}
-		}
-		mesh->createBones();
 	}
+	AssetIO::Free(data);
 }
 
 aiNode* AnimatedModel::searchNode(aiNode* node, std::vector<std::string>& boneList) {
@@ -308,56 +321,104 @@ void AnimatedModel::printAiHierarchy(aiNode * node) {
 	std::cout << "SCALE: " << scale.x << "  " << scale.y << "  " << scale.z << std::endl;
 	std::cout << "ROT: " << rot.x << "  " << rot.y << "  " << rot.z << "  " << rot.w << std::endl;
 
+	std::cout << "NODE MATRIX: " << std::endl;
+	std::cout << transMatrix.a1 << "  " << transMatrix.b1 << "  " << transMatrix.c1 << "  " << transMatrix.d1 << std::endl;
+	std::cout << transMatrix.a2 << "  " << transMatrix.b2 << "  " << transMatrix.c2 << "  " << transMatrix.d2 << std::endl;
+	std::cout << transMatrix.a3 << "  " << transMatrix.b3 << "  " << transMatrix.c3 << "  " << transMatrix.d3 << std::endl;
+	std::cout << transMatrix.a4 << "  " << transMatrix.b4 << "  " << transMatrix.c4 << "  " << transMatrix.d4 << std::endl;
+	std::cout << "########################" << std::endl;
+
 	for (unsigned int i = 0; i < node->mNumChildren; i++) {
 			printAiHierarchy(node->mChildren[i]);
 	}
 }
 
 void AnimatedModel::rotate(const float pitch, const float yaw, const float roll) {
-	for (std::vector<Mesh*>::iterator mesh = m_meshes.begin(); mesh != m_meshes.end(); mesh++) {
-		static_cast<AnimatedMesh*>(*mesh)->rotate(pitch, yaw, roll);		
+	for(auto& mesh : m_meshes) {
+		static_cast<AnimatedMesh*>(mesh)->rotate(pitch, yaw, roll);
 	}
 }
 
 void AnimatedModel::scale(const float sx, const float sy, const float sz) {
-	for (std::vector<Mesh*>::iterator mesh = m_meshes.begin(); mesh != m_meshes.end(); mesh++) {
-		static_cast<AnimatedMesh*>(*mesh)->scale(sx, sy, sz);
+	for(auto& mesh : m_meshes) {
+		static_cast<AnimatedMesh*>(mesh)->scale(sx, sy, sz);
 	}
 }
 
 void AnimatedModel::translate(const float dx, const float dy, const float dz) {
-	for (std::vector<Mesh*>::iterator mesh = m_meshes.begin(); mesh != m_meshes.end(); mesh++) {
-		static_cast<AnimatedMesh*>(*mesh)->translate(dx, dy, dz);
+	for(auto& mesh : m_meshes) {
+		static_cast<AnimatedMesh*>(mesh)->translate(dx, dy, dz);
+	}
+}
+
+void AnimatedModel::translateRelative(const float dx, const float dy, const float dz) {
+	for(auto& mesh : m_meshes) {
+		static_cast<AnimatedMesh*>(mesh)->translateRelative(dx, dy, dz);
 	}
 }
 
 void AnimatedModel::setScale(const float sx, const float sy, const float sz) {
-	for (std::vector<Mesh*>::iterator mesh = m_meshes.begin(); mesh != m_meshes.end(); mesh++) {
-		static_cast<AnimatedMesh*>(*mesh)->setScale(sx, sy, sz);
+	for(auto& mesh : m_meshes) {
+		static_cast<AnimatedMesh*>(mesh)->setScale(sx, sy, sz);
 	}
 }
 
-AnimationState* AnimatedModel::addAnimationState(const Animation& animation) {
-	AnimatedMesh* mesh = static_cast<AnimatedMesh*>(m_meshes.front());
+void AnimatedModel::setRotation(const float pitch, const float yaw, const float roll) {
+	for(auto& mesh : m_meshes) {
+		static_cast<AnimatedMesh*>(mesh)->setRotation(pitch, yaw, roll);
+	}
+}
 
-	if (!mesh->m_numBones)
+AnimationState* AnimatedModel::findAnimationState(const Animation& animation) const {
+	for(const auto& animationState : m_animationStates) {
+		if (&animationState->getAnimation() == &animation)
+			return animationState.get();
+	}
+	return nullptr;
+}
+
+AnimationState* AnimatedModel::findAnimationState(const std::string& name) const {
+	AnimationState* state = nullptr;
+	for(const auto& animationState : m_animationStates) {
+		const Animation& animation = animationState->getAnimation();
+		if (animation.m_animationName == name) {
+			return animationState.get();
+		}
+
+	}
+	return state;
+}
+
+AnimationState* AnimatedModel::addAnimationState(const Animation& animation) {
+	//for (Mesh* mesh : m_meshes) {
+	AnimatedMesh* msh = static_cast<AnimatedMesh*>(m_meshes.front());
+	if (!msh->m_numBones)
 		return nullptr;
 
 	AnimationState* existing = findAnimationState(animation);
 	if (existing)
 		return existing;
 
-	m_animationStates.push_back(std::make_shared<AnimationState>(animation, mesh->m_rootBone));
+	m_animationStates.push_back(std::make_shared<AnimationState>(animation, msh->m_rootBone));
 	OnAnimationOrderChanged();
+	//}
 	return m_animationStates.back().get();
 }
 
-AnimationState* AnimatedModel::findAnimationState(const Animation& animation) const {
-	for (auto it = m_animationStates.begin(); it != m_animationStates.end(); ++it) {
-		if (&(*it)->getAnimation() == &animation)
-			return (*it).get();
-	}
-	return nullptr;
+AnimationState* AnimatedModel::addAnimationStateFront(const Animation& animation) {
+	//for (Mesh* mesh : m_meshes) {
+	AnimatedMesh* msh = static_cast<AnimatedMesh*>(m_meshes.front());
+	if (!msh->m_numBones)
+		return nullptr;
+
+	AnimationState* existing = findAnimationState(animation);
+	if (existing)
+		return existing;
+
+	m_animationStates.insert(m_animationStates.begin(), std::make_shared<AnimationState>(animation, msh->m_rootBone));
+	OnAnimationOrderChanged();
+	//}
+	return m_animationStates.front().get();
 }
 
 AnimationState* AnimatedModel::getAnimationState(size_t index) const {
@@ -371,6 +432,30 @@ void AnimatedModel::removeAnimationState(const Animation& _animation) {
 
 		if (animation.m_animationName == _animation.m_animationName) {
 			m_animationStates.erase(it);
+			OnAnimationOrderChanged();
+			return;
+		}
+	}
+}
+
+void AnimatedModel::removeAnimationState(const std::string& name) {
+	for (auto it = m_animationStates.begin(); it != m_animationStates.end(); ++it) {
+		AnimationState* state = (*it).get();
+		const Animation& animation = state->getAnimation();
+
+		if (animation.m_animationName == name) {
+			m_animationStates.erase(it);
+			OnAnimationOrderChanged();
+			return;
+		}
+	}
+}
+
+void AnimatedModel::removeAnimationState(const AnimationState* state) {
+	for (auto it = m_animationStates.begin(); it != m_animationStates.end(); ++it) {
+		if ((*it).get() == state) {
+			m_animationStates.erase(it);
+			OnAnimationOrderChanged();
 			return;
 		}
 	}
@@ -391,10 +476,16 @@ const Mesh* AnimatedModel::getMesh(unsigned short index) const {
 const std::vector<Mesh*>& AnimatedModel::getMeshes() const {
 	return m_meshes;
 }
-///////////////////////////////////////////////////////////
-AnimatedMesh::AnimatedMesh(AnimatedModel* model) : m_model(model) {
-	m_model = model;
 
+Mesh* AnimatedModel::mesh(unsigned short index) const {
+	return m_meshes[index];
+}
+
+std::vector<std::shared_ptr<AnimationState>>& AnimatedModel::animationStates() {
+	return m_animationStates;
+}
+///////////////////////////////////////////////////////////
+AnimatedMesh::AnimatedMesh(AnimatedModel* model) : m_model(model), m_skinMatrices(nullptr), m_rootBone(nullptr), m_bones(nullptr){
 	m_numBones = 0u;
 	m_materialIndex = -1;
 	m_textureIndex = -1;
@@ -405,9 +496,15 @@ AnimatedMesh::~AnimatedMesh() {
 }
 
 void AnimatedMesh::cleanup() {
-	delete m_rootBone;
-	delete[] m_bones;
-	delete[] m_skinMatrices;
+	if (m_bones) {
+		delete[] m_bones;
+		m_bones = nullptr;
+	}
+	if (m_skinMatrices) {
+		delete[] m_skinMatrices;
+		m_skinMatrices = nullptr;
+	}
+	m_rootBone = nullptr;
 }
 
 void AnimatedMesh::updateSkinning() {
@@ -416,17 +513,7 @@ void AnimatedMesh::updateSkinning() {
 	
 }
 
-void AnimatedMesh::update(float dt) {
-	for (auto it = m_model->m_animationStates.begin(); it != m_model->m_animationStates.end(); ++it) {
-		AnimationState* state = (*it).get();
-		if (state->isEnabled() || state->getAnimationBlendMode() == ABM_FADE) {
-			state->addTime(dt);
-			state->apply();
-		}		
-	}
-}
-
-void AnimatedMesh::applyBindpose(bool onTransformChanged) {
+void AnimatedMesh::applyBindPose(bool onTransformChanged) {
 	for (size_t i = 0u; i < m_numBones; ++i) {
 		Bone* bone = m_bones[i];
 		const BoneDescription& boneDescription = m_boneDescriptions[i];
@@ -439,6 +526,7 @@ void AnimatedMesh::applyBindpose(bool onTransformChanged) {
 }
 
 void AnimatedMesh::createBones() {
+	cleanup();
 	m_numBones = static_cast<unsigned short>(m_boneDescriptions.size());
 
 	m_bones = new Bone*[m_numBones];
@@ -449,7 +537,7 @@ void AnimatedMesh::createBones() {
 		m_bones[i] = new Bone();
 		m_bones[i]->setName(boneDescription.name);
 		m_bones[i]->setPosition(boneDescription.initialPosition);
-		m_bones[i]->setOrientation({ boneDescription.initialRotation[0], boneDescription.initialRotation[1], boneDescription.initialRotation[2], boneDescription.initialRotation[3] });
+		m_bones[i]->setOrientation(boneDescription.initialRotation);
 		m_bones[i]->setScale(boneDescription.initialScale);
 		m_bones[i]->m_offsetMatrix = boneDescription.offsetMatrix;
 	}
@@ -460,6 +548,10 @@ void AnimatedMesh::createBones() {
 			m_bones[i]->setParent(nullptr);
 			m_rootBone = m_bones[i];
 			m_bones[i]->setIsRootBone(true);
+		}else if (boneDescription.parentIndex == -1) {
+			m_bones[i]->setParent(m_bones[0]);
+			m_bones[i]->setIsRootBone(false);
+			m_bones[i]->setHasParent(false);
 		}else {
 			m_bones[i]->setParent(m_bones[boneDescription.parentIndex]);
 		}
@@ -467,52 +559,6 @@ void AnimatedMesh::createBones() {
 
 	for (size_t i = 0u; i < m_numBones; ++i)
 		m_bones[i]->countChildBones();
-}
-
-void AnimatedMesh::rotate(const float pitch, const float yaw, const float roll) {
-	for (size_t i = 0; i < m_numBones; ++i) {
-		if (m_bones[i]->isRootBone()) {
-			m_boneDescriptions[i].initialRotation *= glm::quat(glm::vec3(glm::radians(pitch), glm::radians(yaw), glm::radians(roll)));
-			m_rootBone->OnTransformChanged();
-			break;
-		}
-	}
-}
-
-void AnimatedMesh::scale(const float sx, const float sy, const float sz) {
-	for (size_t i = 0; i < m_numBones; ++i) {
-		if (m_bones[i]->isRootBone()) {
-			m_boneDescriptions[i].initialScale.x *= sx;
-			m_boneDescriptions[i].initialScale.y *= sy;
-			m_boneDescriptions[i].initialScale.z *= sz;
-			m_rootBone->OnTransformChanged();
-			break;
-		}
-	}
-}
-
-void AnimatedMesh::translate(const float dx, const float dy, const float dz) {
-	for (size_t i = 0; i < m_numBones; ++i) {
-		if (m_bones[i]->isRootBone()) {
-			m_boneDescriptions[i].initialPosition.x += dx;
-			m_boneDescriptions[i].initialPosition.y += dy;
-			m_boneDescriptions[i].initialPosition.z += dz;
-			m_rootBone->OnTransformChanged();
-			break;
-		}
-	}
-}
-
-void AnimatedMesh::setScale(const float sx, const float sy, const float sz) {
-	for (size_t i = 0u; i < m_numBones; ++i) {
-		if (m_bones[i]->isRootBone()) {
-			m_boneDescriptions[i].initialScale.x = sx;
-			m_boneDescriptions[i].initialScale.x = sy;
-			m_boneDescriptions[i].initialScale.x = sz;
-			m_rootBone->OnTransformChanged();
-			break;
-		}
-	}
 }
 
 const std::vector<BoneDescription>& AnimatedMesh::getBoneDescriptions() const {
@@ -531,16 +577,82 @@ const glm::mat4* AnimatedMesh::getSkinMatrices() const {
 	return m_skinMatrices;
 }
 
-const unsigned short AnimatedMesh::getNumBones() const {
+unsigned short AnimatedMesh::getNumBones() const {
 	return m_numBones;
 }
 
-const bool AnimatedMesh::hasMaterial() const {
+bool AnimatedMesh::hasMaterial() const {
 	return m_materialIndex >= 0;
 }
 
 const Material& AnimatedMesh::getMaterial() const {
 	return Material::GetMaterials()[m_materialIndex];
+}
+
+void AnimatedMesh::rotate(const float pitch, const float yaw, const float roll) {
+	for (size_t i = 0; i < m_numBones; ++i) {
+		if (m_bones[i]->isRootBone()) {
+			m_boneDescriptions[i].initialRotation *= glm::quat(glm::vec3(glm::radians(pitch), glm::radians(yaw), glm::radians(roll)));
+			m_rootBone->setOrientation(m_boneDescriptions[i].initialRotation);
+			break;
+		}
+	}
+}
+
+void AnimatedMesh::scale(const float sx, const float sy, const float sz) {
+	for (size_t i = 0; i < m_numBones; ++i) {
+		if (m_bones[i]->isRootBone()) {
+			m_boneDescriptions[i].initialScale.x *= sx;
+			m_boneDescriptions[i].initialScale.y *= sy;
+			m_boneDescriptions[i].initialScale.z *= sz;
+			m_rootBone->setScale(m_boneDescriptions[i].initialScale);
+			break;
+		}
+	}
+}
+
+void AnimatedMesh::translate(const float dx, const float dy, const float dz) {
+	for (size_t i = 0; i < m_numBones; ++i) {
+		if (m_bones[i]->isRootBone()) {
+			m_boneDescriptions[i].initialPosition.x += dx;
+			m_boneDescriptions[i].initialPosition.y += dy;
+			m_boneDescriptions[i].initialPosition.z += dz;
+			m_rootBone->setPosition(m_boneDescriptions[i].initialPosition);
+			break;
+		}
+	}
+}
+
+void AnimatedMesh::translateRelative(const float dx, const float dy, const float dz) {
+	for (size_t i = 0u; i < m_numBones; ++i) {
+		if (m_bones[i]->isRootBone()) {
+			m_boneDescriptions[i].initialPosition += m_bones[i]->getOrientation() * glm::vec3(dx, dy, dz);
+			m_rootBone->setPosition(m_boneDescriptions[i].initialPosition);
+			break;
+		}
+	}
+}
+
+void AnimatedMesh::setScale(const float sx, const float sy, const float sz) {
+	for (size_t i = 0u; i < m_numBones; ++i) {
+		if (m_bones[i]->isRootBone()) {
+			m_boneDescriptions[i].initialScale.x = sx;
+			m_boneDescriptions[i].initialScale.x = sy;
+			m_boneDescriptions[i].initialScale.x = sz;
+			m_rootBone->setScale(m_boneDescriptions[i].initialScale);
+			break;
+		}
+	}
+}
+
+void AnimatedMesh::setRotation(const float pitch, const float yaw, const float roll) {
+	for (size_t i = 0u; i < m_numBones; ++i) {
+		if (m_bones[i]->isRootBone()) {
+			m_boneDescriptions[i].initialRotation = glm::quat(glm::vec3(glm::radians(pitch), glm::radians(yaw), glm::radians(roll)));
+			m_rootBone->setOrientation(m_boneDescriptions[i].initialRotation);
+			break;
+		}
+	}
 }
 
 std::vector<BoneDescription>& AnimatedMesh::boneDescriptions() const {
@@ -563,10 +675,22 @@ std::vector<std::array<unsigned int, 4>>& AnimatedMesh::joints() const {
 	return m_joints;
 }
 
+glm::mat4* AnimatedMesh::skinMatrices() const {
+	return m_skinMatrices;
+}
+
 unsigned int& AnimatedMesh::stride() const {
 	return m_stride;
 }
 
 Bone**& AnimatedMesh::bones() const {
 	return m_bones;
+}
+
+const Bone& AnimatedMesh::getBone(size_t index) const {
+	return *m_bones[index];
+}
+
+const glm::mat4& AnimatedMesh::getSkinMatrix(size_t index) const {
+	return m_skinMatrices[index];
 }

@@ -1,6 +1,6 @@
 #include <WebGPU/WgpContext.h>
 #include <States/Wireframe.h>
-#include <States/VolumeRendering.h>
+#include <States/Isometric.h>
 
 #include "AssetIO.h"
 #include "Collada.h"
@@ -12,12 +12,12 @@ Collada::Collada(StateMachine& machine) : State(machine, States::COLLADA)  {
 
     MemoryIOSystem* memoryFS = new MemoryIOSystem();
     memoryFS->AddFile("models/cowboy/cowboy.dae", std::vector<char>{data, data + size});
-    m_run.loadAnimationAssimp(memoryFS, "models/cowboy/cowboy.dae", "Armature_Armature", "run");
+    m_run.loadAnimationAssimp("models/cowboy/cowboy.dae", "Armature_Armature", "run");
 
     memoryFS = new MemoryIOSystem();
     memoryFS->AddFile("models/cowboy/cowboy.dae", std::vector<char>{data, data + size});
-    m_cowboy.loadModelAssimp(memoryFS,"models/cowboy/cowboy.dae", 0u);
-    m_cowboy.applyBindpose(true);
+    m_cowboy.loadModelAssimp("models/cowboy/cowboy.dae", 0u);
+    m_cowboy.applyBindPose(true);
     m_cowboy.addAnimationState(m_run);
     m_cowboy.getAnimationState(0)->setLooped(true);
 
@@ -98,7 +98,7 @@ void Collada::OnButton(const Event::MouseButtonEvent& event) {
     m_isRunning = false;
 
     if(event.button == Event::MouseButtonEvent::BUTTON_LEFT){
-        m_machine.addStateAtBottom(new VolumeRendering(m_machine));
+        m_machine.addStateAtBottom(new Isometric(m_machine));
     }
 
     if(event.button == Event::MouseButtonEvent::BUTTON_RIGHT){

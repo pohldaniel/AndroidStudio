@@ -4,7 +4,7 @@
 
 #include "AnimationState.h"
 
-AnimationStateTrack::AnimationStateTrack() : m_track(nullptr), m_node(nullptr), m_weight(1.0f), m_keyFrame(0) {
+AnimationStateTrack::AnimationStateTrack() : m_track(nullptr), m_bone(nullptr), m_weight(1.0f), m_keyFrame(0u) {
 
 }
 
@@ -18,58 +18,48 @@ AnimationState::AnimationState(const Animation& animation, Bone* startBone) :
 	m_stateTime(0.0f),
 	m_blendLayer(0),
 	m_looped(false),
-	m_backward(false),
 	m_blendWeight(1.0f),
-	m_layeredTime(0.0f),
-	m_fadeLayerLength(1.0f),
-	m_additiveDirection(1.0f),
-	m_invertBlend(false),
 	m_animationBlendMode(AnimationBlendMode::ABM_LERP){
 
 	setStartBone(nullptr);
-
 }
 
 AnimationState::~AnimationState() {
 
 }
 
-void AnimationState::setStartBone(Bone* startBone_) {
+void AnimationState::setStartBone(Bone* startBone) {
 
-	if (!startBone_)
-		startBone_ = m_startBone;
+	if (!startBone)
+		startBone = m_startBone;
 
-	// Do not reassign if the start bone did not actually change, and we already have valid bone nodes
 	if (!m_stateTracks.empty())
 		return;
 
-	m_startBone = startBone_;
+	m_startBone = startBone;
 
 	const std::map<std::string, AnimationTrack>& tracks = m_animation.getTracks();
 	m_stateTracks.clear();
 
-	for (auto it = tracks.begin(); it != tracks.end(); ++it) {
-		if (it->second.m_keyFrames.empty())
+	for (const auto& track : tracks) {
+		if (track.second.m_keyFrames.empty())
 			continue;
 
 		AnimationStateTrack stateTrack;
-		stateTrack.m_track = &it->second;
+		stateTrack.m_track = &track.second;
 
-		// Include those tracks that are either the start bone itself, or its children
-		const std::string& name = it->second.m_name;
-
+		const std::string& name = track.second.m_name;
 		if (name == m_startBone->m_name) {
-			stateTrack.m_node = m_startBone;
+			stateTrack.m_bone = m_startBone;
 		}else {
-			stateTrack.m_node = m_startBone->findChild(name, true);
+			stateTrack.m_bone = m_startBone->findChild(name, true);
 		}
 
-		stateTrack.m_initialPosition = glm::lerp(it->second.m_keyFrames[0].m_position, it->second.m_keyFrames[1].m_position, EPSILON * 3.0f);
-		stateTrack.m_initialScale = glm::lerp(it->second.m_keyFrames[0].m_scale, it->second.m_keyFrames[1].m_scale, EPSILON * 3.0f);
-		stateTrack.m_initialOrientation = glm::slerp(it->second.m_keyFrames[0].m_rotation, it->second.m_keyFrames[1].m_rotation, EPSILON * 3.0f);
-		stateTrack.m_initialOrientation = glm::inverse(stateTrack.m_initialOrientation);
+		stateTrack.m_initialPosition = track.second.m_keyFrames[0].m_position;
+		stateTrack.m_initialScale = track.second.m_keyFrames[0].m_scale;
+		stateTrack.m_initialOrientation = track.second.m_keyFrames[0].m_rotation;
 
-		if (stateTrack.m_node)
+		if (stateTrack.m_bone)
 			m_stateTracks.push_back(stateTrack);
 	}
 }
@@ -92,40 +82,9 @@ void AnimationState::setTime(float time_) {
 	}
 }
 
-void AnimationState::setBoneWeight(size_t index, float weight_, bool recursive) {
-	if (index >= m_stateTracks.size())
-		return;
-
-	weight_ = glm::clamp(weight_, 0.0f, 1.0f);
-
-	if (weight_ != m_stateTracks[index].m_weight) {
-		m_stateTracks[index].m_weight = weight_;
-	}
-
-	if (recursive && m_stateTracks[index].m_node) {
-		const std::list<std::unique_ptr<Bone>>& children = m_stateTracks[index].m_node->m_children;
-		for (auto it = children.begin(); it != children.end(); ++it) {
-			Bone* node = (*it).get();
-
-			size_t childTrackIndex = findTrackIndex(node);
-			if (childTrackIndex < m_stateTracks.size())
-				setBoneWeight(childTrackIndex, m_blendWeight, true);
-
-		}
-	}
-}
-
-void AnimationState::setBoneWeight(const std::string& name, float weight_, bool recursive) {
-	setBoneWeight(findTrackIndex(name), weight_, recursive);
-}
-
-void AnimationState::addWeight(float delta) {
-	if (delta != 0.0f)
-		setWeight(getWeight() + delta);
-}
-
 void AnimationState::addTime(float dt) {
 	float length = m_animation.getLength();
+
 	if (dt == 0.0f || length == 0.0f)
 		return;
 
@@ -139,52 +98,6 @@ void AnimationState::addTime(float dt) {
 	}
 
 	setTime(newTime);
-
-	float ticksPerSecond = 1.0f;
-
-	if (m_animationBlendMode == ABM_FADE) {
-		m_blendWeight += dt;
-		if (m_blendWeight >= 2.0f) {
-			m_blendWeight = 0.0f;
-			m_invertBlend = !m_invertBlend;
-			m_additiveDirection *= -1.0f;
-		}
-
-		float blendWeight = m_blendWeight;
-		if (blendWeight < 0.0f) { blendWeight = 0.0f; }
-		if (blendWeight > 1.0f) { blendWeight = 1.0f; }
-		if (m_invertBlend) { blendWeight = 1.0f - blendWeight; }
-
-		float a = length / m_fadeLayerLength;
-		const float animSpeedMultiplierDown = (1.0f - blendWeight) * a + blendWeight;
-
-		m_layeredTime += ticksPerSecond * dt * animSpeedMultiplierDown;
-
-		if (m_layeredTime > length) {
-			m_layeredTime = fmod(m_layeredTime, length);
-		}
-		setWeight(blendWeight);
-	}
-
-	if (m_animationBlendMode != ABM_ADDITIVE)
-		return;
-
-	float speed = 1.0f;
-	float startTime = 0.0f;
-
-
-	m_layeredTime += dt * m_additiveDirection * ticksPerSecond * speed;
-	if (m_layeredTime < 0.0f) {
-		m_layeredTime = 0.0f;
-		m_additiveDirection *= -1.0f;
-	}
-
-	if (m_layeredTime > 1.0f) {
-		m_layeredTime = 1.0f;
-		m_additiveDirection *= -1.0f;
-	}
-
-	m_layeredTime = startTime + (length * m_layeredTime);
 }
 
 void AnimationState::setBlendLayer(unsigned char layer) {
@@ -201,9 +114,9 @@ float AnimationState::getBoneWeight(const std::string& name) const {
 	return getBoneWeight(findTrackIndex(name));
 }
 
-size_t AnimationState::findTrackIndex(Bone* node) const {
+size_t AnimationState::findTrackIndex(Bone* bone) const {
 	for (unsigned i = 0; i < m_stateTracks.size(); ++i) {
-		if (m_stateTracks[i].m_node == node)
+		if (m_stateTracks[i].m_bone == bone)
 			return i;
 	}
 	return UINT_MAX;
@@ -211,7 +124,7 @@ size_t AnimationState::findTrackIndex(Bone* node) const {
 
 size_t AnimationState::findTrackIndex(const std::string& name) const {
 	for (size_t i = 0; i < m_stateTracks.size(); ++i) {
-		Bone* node = m_stateTracks[i].m_node;
+		Bone* node = m_stateTracks[i].m_bone;
 		if (node && node->m_name == name)
 			return i;
 	}
@@ -223,21 +136,15 @@ float AnimationState::getLength() const {
 }
 
 void AnimationState::apply() {
-
-	if (m_animationBlendMode == ABM_NONE)
-		applyToNodes();
-	else
-		applyToModel();
+	applyToModel();
 }
 
 void AnimationState::reset(){
-	for (auto it = m_stateTracks.begin(); it != m_stateTracks.end(); ++it) {
-		AnimationStateTrack& stateTrack = *it;
-		stateTrack.m_keyFrame = 0u;
+	for (auto& stateTrack : m_stateTracks) {
+			stateTrack.m_keyFrame = 0u;
 		stateTrack.m_weight = 1.0f;
 	}
 	m_stateTime = 0.0f;
-	m_layeredTime = 0.0f;
 }
 
 bool Equals(float lhs, float rhs, float epsilon = EPSILON) {
@@ -246,31 +153,22 @@ bool Equals(float lhs, float rhs, float epsilon = EPSILON) {
 
 void AnimationState::applyToModel() {
 
-	for (auto it = m_stateTracks.begin(); it != m_stateTracks.end(); ++it) {
-		AnimationStateTrack& stateTrack = *it;
-		
+	for (auto& stateTrack : m_stateTracks) {
 		const AnimationTrack* track = stateTrack.m_track;
 		float finalWeight = m_blendWeight * stateTrack.m_weight;
-		Bone* bone = stateTrack.m_node;
+		Bone* bone = stateTrack.m_bone;
 
 		if (Equals(finalWeight, 0.0f) || !bone->animationEnabled())
 			continue;
 
-		if (m_animationBlendMode != ABM_LERP)
-			track->findKeyFrameIndex(m_layeredTime, stateTrack.m_keyFrame);
-		else
-			track->findKeyFrameIndex(m_stateTime, stateTrack.m_keyFrame);
-
-		const AnimationKeyFrame& keyFrame = track->m_keyFrames[stateTrack.m_keyFrame];
+		track->findKeyFrameIndex(m_stateTime, stateTrack.m_keyFrame);
 
 		size_t nextFrame = stateTrack.m_keyFrame + 1;
 		bool interpolate = true;
 
 		if (nextFrame >= track->m_keyFrames.size()) {
-			if (m_backward)
-				nextFrame = track->m_keyFrames.size();
-			else if (m_looped) {
-				nextFrame = 0;
+			if (m_looped){
+				nextFrame = 0u;
 			}else {
 				nextFrame = stateTrack.m_keyFrame;
 				interpolate = false;
@@ -281,127 +179,33 @@ void AnimationState::applyToModel() {
 		glm::quat newRotation = bone->m_orientation;
 		glm::vec3 newScale = bone->m_scale;
 
+		const AnimationKeyFrame& keyFrame = track->m_keyFrames[stateTrack.m_keyFrame];
 		const AnimationKeyFrame& nextKeyFrame = track->m_keyFrames[nextFrame];
+
 		float timeInterval = nextKeyFrame.m_time - keyFrame.m_time;
 
 		if (timeInterval < 0.0f)
 			timeInterval += m_animation.getLength();
 
-		float t;
-		if (m_animationBlendMode == ABM_ADDITIVE) {
-			t = timeInterval + EPSILON > 0.0f ? (m_layeredTime - keyFrame.m_time) / (timeInterval + EPSILON) : 1.0f;
-		}else if (m_animationBlendMode == ABM_FADE) {
-			t = timeInterval > 0.0f ? (m_layeredTime - keyFrame.m_time) / timeInterval : 1.0f;
-		}else {
-			t = timeInterval > 0.0f ? (m_stateTime - keyFrame.m_time) / timeInterval : 1.0f;
-		}
+		float t = timeInterval > 0.0f ? (m_stateTime - keyFrame.m_time) / timeInterval : 1.0f;
 
-		if (track->m_channelMask & CHANNEL_POSITION) 
+		if (track->m_channelMask & CHANNEL_POSITION)
 			newPosition = glm::lerp(keyFrame.m_position, nextKeyFrame.m_position, t);
 		if (track->m_channelMask & CHANNEL_ROTATION) {
 			newRotation = glm::slerp(keyFrame.m_rotation, nextKeyFrame.m_rotation, t);
-			//std::cout << "ROT1: " << nextFrame << "  " << keyFrame.m_rotation.x << "  " << keyFrame.m_rotation.y << "  " << keyFrame.m_rotation.z << "  " << keyFrame.m_rotation.w << std::endl;
-			//std::cout << "ROT2: " << nextFrame << "  " << nextKeyFrame.m_rotation.x << "  " << nextKeyFrame.m_rotation.y << "  " << nextKeyFrame.m_rotation.z << "  " << nextKeyFrame.m_rotation.w << std::endl;
-			//std::cout << "RES: " << nextFrame << "  " << newRotation.x << "  " << newRotation.y << "  " << newRotation.z << "  " << newRotation.w << std::endl;
-			//std::cout << "########" << std::endl;
 		}if (track->m_channelMask & CHANNEL_SCALE)
 			newScale = glm::lerp(keyFrame.m_scale, nextKeyFrame.m_scale, t);
 
-
-		if (m_animationBlendMode == ABM_ADDITIVE) {
-			if (track->m_channelMask & CHANNEL_POSITION) {
-				glm::vec3 delta = newPosition - stateTrack.m_initialPosition;
-				newPosition = bone->m_position + delta * finalWeight;
-			}
-
-			if (track->m_channelMask & CHANNEL_ROTATION) {
-				newRotation = (newRotation * stateTrack.m_initialOrientation * bone->m_orientation);
-				if (!Equals(finalWeight, 1.0f))
-					newRotation = glm::slerp(bone->m_orientation, newRotation, finalWeight);
-			}
-
-			if (track->m_channelMask & CHANNEL_SCALE) {
-				glm::vec3 delta = newScale - stateTrack.m_initialScale;
-				newScale = bone->m_scale + delta * finalWeight;
-			}
-
-		}else {
-			if (finalWeight < 1.0f) {
-				if (track->m_channelMask & CHANNEL_POSITION)
-					newPosition = glm::lerp(bone->m_position, newPosition, finalWeight);
-				if (track->m_channelMask & CHANNEL_ROTATION)
-					newRotation = glm::slerp(bone->m_orientation, newRotation, finalWeight);
-				if (track->m_channelMask & CHANNEL_SCALE)
-					newScale = glm::lerp(bone->m_scale, newScale, finalWeight);
-			}
-		}
-
-		bone->setTransformSilent(newPosition, newRotation, newScale);
-		bone->OnTransformChanged();
-	}
-}
-
-void AnimationState::applyToNodes() {
-
-	for (auto it = m_stateTracks.begin(); it != m_stateTracks.end(); ++it) {
-
-		AnimationStateTrack& stateTrack = *it;
-		const AnimationTrack* track = stateTrack.m_track;
-		Bone* node = stateTrack.m_node;
-
-		track->findKeyFrameIndex(m_stateTime, stateTrack.m_keyFrame);
-		const AnimationKeyFrame& keyFrame = track->m_keyFrames[stateTrack.m_keyFrame];
-
-		size_t nextFrame = stateTrack.m_keyFrame + 1;
-		bool interpolate = true;
-		if (nextFrame >= track->m_keyFrames.size()) {
-			if (m_backward)
-				nextFrame = track->m_keyFrames.size();
-			else if (m_looped) {
-				nextFrame = 0;
-			}
-			else {
-				nextFrame = stateTrack.m_keyFrame;
-				interpolate = false;
-			}
-		}
-
-		glm::vec3 newPosition = node->m_position;
-		glm::quat newRotation = node->m_orientation;
-		glm::vec3 newScale = node->m_scale;
-
-		if (interpolate) {
-
-			const AnimationKeyFrame& nextKeyFrame = track->m_keyFrames[nextFrame];
-			float timeInterval = nextKeyFrame.m_time - keyFrame.m_time;
-			if (timeInterval < 0.0f)
-				timeInterval += m_animation.getLength();
-
-
-			float t = timeInterval > 0.0f ? (m_stateTime - keyFrame.m_time) / timeInterval : 1.0f;
-
+		if (finalWeight < 1.0f) {
 			if (track->m_channelMask & CHANNEL_POSITION)
-				newPosition = glm::lerp(keyFrame.m_position, nextKeyFrame.m_position, t);
-
-			if (track->m_channelMask & CHANNEL_ROTATION) {
-				newRotation = glm::slerp(keyFrame.m_rotation, nextKeyFrame.m_rotation, t);
-			}
-
-			if (track->m_channelMask & CHANNEL_SCALE)
-				newScale = glm::lerp(keyFrame.m_scale, nextKeyFrame.m_scale, t);
-		}else {
-
-			if (track->m_channelMask & CHANNEL_POSITION)
-				newPosition = keyFrame.m_position;
+				newPosition = glm::lerp(bone->m_position, newPosition, finalWeight);
 			if (track->m_channelMask & CHANNEL_ROTATION)
-				newRotation = keyFrame.m_rotation;
+				newRotation = glm::slerp(bone->m_orientation, newRotation, finalWeight);
 			if (track->m_channelMask & CHANNEL_SCALE)
-				newScale = keyFrame.m_scale;
+				newScale = glm::lerp(bone->m_scale, newScale, finalWeight);
 		}
 
-		node->setPosition(newPosition);
-		node->setOrientation(newRotation);
-		node->setScale(newScale);
+		bone->setTransform(newPosition, newRotation, newScale);
 	}
 }
 
@@ -409,20 +213,8 @@ void AnimationState::setBlendMode(AnimationBlendMode mode) {
 	m_animationBlendMode = mode;
 }
 
-void AnimationState::setBackward(bool backward) {
-	m_backward = backward;
-}
-
-void AnimationState::setFadeLayerLength(float length) {
-	m_fadeLayerLength = length;
-}
-
-const AnimationBlendMode AnimationState::getAnimationBlendMode() const {
+AnimationBlendMode AnimationState::getAnimationBlendMode() const {
 	return m_animationBlendMode;
-}
-
-const float AnimationState::getRestTime() const {
-	return std::max(getLength() - m_stateTime, m_stateTime);
 }
 
 const Animation& AnimationState::getAnimation() const {
