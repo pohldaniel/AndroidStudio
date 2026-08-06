@@ -21,9 +21,9 @@ void WgpModel::create(const ObjModel& model) {
     for (const Mesh* _mesh : model.getMeshes()) {
         const ObjMesh* mesh = static_cast<const ObjMesh*>(_mesh);
         if (mesh->hasMaterial() &&  mesh->getMaterial().hasTexture(TextureSlot::TEXTURE_DIFFUSE))
-            m_meshes.push_back(WgpMesh(mesh->getVertexBuffer(), mesh->getIndexBuffer(), mesh->getMaterial().getTextures().at(TextureSlot::TEXTURE_DIFFUSE)));
+            m_meshes.emplace_back(mesh->getVertexBuffer(), mesh->getIndexBuffer(), mesh->getMaterial().getTextures().at(TextureSlot::TEXTURE_DIFFUSE));
         else
-            m_meshes.push_back(WgpMesh(mesh->getVertexBuffer(), mesh->getIndexBuffer()));
+            m_meshes.emplace_back(mesh->getVertexBuffer(), mesh->getIndexBuffer());
     }
     markForDelete();
 }

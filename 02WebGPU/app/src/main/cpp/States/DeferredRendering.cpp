@@ -2,17 +2,9 @@
 #include <States/Wireframe.h>
 #include <States/ComputeParticleLogo.h>
 
-#include "AssetIO.h"
 #include "DeferredRendering.h"
 
 DeferredRendering::DeferredRendering(StateMachine& machine) : State(machine, States::DEFERRED_RENDERING) {
-
-    uint8_t* data; uint32_t size;
-    AssetIO::LoadAsset("models/dragon_vrip_res4.ply", data, size);
-
-    MemoryIOSystem* memoryFS = new MemoryIOSystem();
-    memoryFS->AddFile("models/dragon_vrip_res4.ply", std::vector<char>{data, data + size});
-
 
     m_camera.perspective(glm::radians(72.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);
@@ -21,7 +13,9 @@ DeferredRendering::DeferredRendering(StateMachine& machine) : State(machine, Sta
     m_camera.setMovingSpeed(20.0f);
     m_camera.setRotationSpeed(0.1f);
 
-    m_dragon.loadModel(memoryFS,"models/dragon_vrip_res4.ply", glm::vec3(0.0f, 1.0f, 0.0f), 0.0f, glm::vec3(0.0f, -45.0f, 0.0f), 500.0f);
+    m_dragon.loadModel("models/dragon_vrip_res4.ply");
+	m_dragon.scale(500.0f);
+	m_dragon.translate(0.0f, -45.0, 0.0f);
     m_dragon.generateNormals();
     m_dragon.generateUVs();
 

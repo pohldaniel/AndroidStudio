@@ -27,6 +27,7 @@ public:
 
 	void setPosition(const glm::vec3& position);
 	void setOrientation(const glm::quat& orientation);
+	void setOrientation(float pitch, float yaw, float roll);
 	void setScale(const glm::vec3& scale);
 	void setName(const std::string& name);
 	void setParent(Bone* node);

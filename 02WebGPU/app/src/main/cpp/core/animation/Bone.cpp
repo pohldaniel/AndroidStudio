@@ -94,10 +94,6 @@ const std::string& Bone::getName() const {
 	return m_name;
 }
 
-const glm::vec3& Bone::getScale() const {
-	return m_scale;
-}
-
 void Bone::setPosition(const glm::vec3& position) {
 	m_position = position;
 	OnTransformChanged();
@@ -105,6 +101,11 @@ void Bone::setPosition(const glm::vec3& position) {
 
 void Bone::setOrientation(const glm::quat& orientation) {
 	m_orientation = orientation;
+	OnTransformChanged();
+}
+
+void Bone::setOrientation(float pitch, float yaw, float roll) {
+	m_orientation = glm::quat(glm::vec3(glm::radians(pitch), glm::radians(yaw), glm::radians(roll)));
 	OnTransformChanged();
 }
 
@@ -171,6 +172,10 @@ const glm::quat& Bone::getOrientation() const {
 	return m_orientation;
 }
 
+const glm::vec3& Bone::getScale() const {
+	return m_scale;
+}
+
 void Bone::countChildBones() {
 	m_numChildBones = 0;
 	for (auto & it : m_children) {
@@ -179,7 +184,7 @@ void Bone::countChildBones() {
 	}
 }
 
-void Bone::rotate(const float pitch, const float yaw, const float roll) {
+void Bone::rotate(float pitch, float yaw, float roll) {
 	m_orientation *= glm::quat(glm::vec3(glm::radians(pitch), glm::radians(yaw), glm::radians(roll)));
 	OnTransformChanged();
 }

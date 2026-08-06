@@ -2,26 +2,15 @@
 #include <States/Wireframe.h>
 #include <States/Isometric.h>
 
-#include "AssetIO.h"
 #include "Collada.h"
 
 Collada::Collada(StateMachine& machine) : State(machine, States::COLLADA)  {
 
-    uint8_t* data; uint32_t size;
-    AssetIO::LoadAsset("models/cowboy/cowboy.dae", data, size);
-
-    MemoryIOSystem* memoryFS = new MemoryIOSystem();
-    memoryFS->AddFile("models/cowboy/cowboy.dae", std::vector<char>{data, data + size});
     m_run.loadAnimationAssimp("models/cowboy/cowboy.dae", "Armature_Armature", "run");
-
-    memoryFS = new MemoryIOSystem();
-    memoryFS->AddFile("models/cowboy/cowboy.dae", std::vector<char>{data, data + size});
     m_cowboy.loadModelAssimp("models/cowboy/cowboy.dae", 0u);
     m_cowboy.applyBindPose(true);
     m_cowboy.addAnimationState(m_run);
     m_cowboy.getAnimationState(0)->setLooped(true);
-
-    AssetIO::Free(data);
 
     m_camera.perspective(glm::radians(25.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);

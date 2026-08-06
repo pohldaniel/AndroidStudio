@@ -103,10 +103,13 @@ public:
 	AssimpModel& operator=(AssimpModel&& rhs) noexcept;
 	~AssimpModel() override;
 
-	void loadModel(MemoryIOSystem* memoryIOSystem, const char* filename, bool isStacked = false, bool generateNormals = false, bool generateTangents = false, bool flipYZ = false, bool flipWinding = false);
-	void loadModel(MemoryIOSystem* memoryIOSystem, const char* filename, const glm::vec3& axis, float degrees, const glm::vec3& translate = glm::vec3(0.0f, 0.0f, 0.0f), float scale = 1.0f, bool isStacked = false, bool generateNormals = false, bool generateTangents = false, bool flipYZ = false, bool flipWinding = false);
-	void loadModelCpu(MemoryIOSystem* memoryIOSystem, const char* filename, bool isStacked = false, bool generateNormals = false, bool generateTangents = false, bool flipYZ = false, bool flipWinding = false);
-	void loadModelCpu(MemoryIOSystem* memoryIOSystem, const char* filename, const glm::vec3& axis, float degrees, const glm::vec3& translate = glm::vec3(0.0f, 0.0f, 0.0f), float scale = 1.0f, bool isStacked = false, bool generateNormals = false, bool generateTangents = false, bool flipYZ = false, bool flipWinding = false);
+	void loadModel(const char* filename, bool isStacked = false, bool generateNormals = false, bool generateTangents = false, bool flipYZ = false, bool flipWinding = false);
+	void loadModelCpu(const char* filename, bool isStacked = false, bool generateNormals = false, bool generateTangents = false, bool flipYZ = false, bool flipWinding = false);
+
+	void scale(float sx, float sy, float sz);
+	void scale(float s);
+	void rotate(float pitch, float yaw, float roll);
+	void translate(float dx, float dy, float dz);
 	
 	const glm::vec3& getCenter() const;
 
@@ -116,7 +119,7 @@ public:
 	const std::vector<Mesh*>& getMeshes() const;
 	const std::vector<float>& getVertexBuffer() const;
 	const std::vector<unsigned int>& getIndexBuffer() const;
-	const unsigned int getNumberOfTriangles() const;
+	unsigned int getNumberOfTriangles() const;
 
 	void generateNormals();
 	void rewind();
@@ -130,7 +133,7 @@ private:
 
 	unsigned int m_numberOfTriangles, m_numberOfMeshes, m_stride;
 
-	bool m_hasTextureCords, m_hasNormals, m_hasTangents, m_hasMaterial;
+	bool m_hasTextureCoords, m_hasNormals, m_hasTangents, m_hasMaterial;
 	bool m_isStacked;
 
 	std::string m_modelDirectory;
@@ -166,8 +169,8 @@ public:
 	void cleanup();
 
 	const std::unordered_map<TextureSlot, std::pair<unsigned char*, unsigned int>>& getEmbeddedTextures() const;
-	const void removeEmbeddedTexture(TextureSlot textureSlot) const;
-	const bool hasMaterial() const;
+	void removeEmbeddedTexture(TextureSlot textureSlot) const;
+	bool hasMaterial() const;
 
 private:
 

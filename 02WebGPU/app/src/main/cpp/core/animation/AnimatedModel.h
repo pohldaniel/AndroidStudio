@@ -52,6 +52,7 @@ public:
 
 	void setScale(float sx, float sy, float sz);
 	void setRotation(float pitch, float yaw, float roll);
+	void setHasAnimationController(bool hasAnimationController);
 
 	AnimationState* findAnimationState(const Animation& animation) const;
 	AnimationState* findAnimationState(const std::string& name) const;
@@ -66,9 +67,9 @@ public:
 
 	unsigned int getStride() const override;
 	const Mesh* getMesh(unsigned short index = 0u) const;
+	const glm::mat4& getWorldTransformation() const;
 	const std::vector<Mesh*>& getMeshes() const;
 	Mesh* mesh(unsigned short index = 0u) const;
-
 	std::vector<std::shared_ptr<AnimationState>>& animationStates();
 
 private:
@@ -80,7 +81,7 @@ private:
 
 	unsigned int m_numberOfTriangles, m_numberOfMeshes, m_stride;
 
-	bool m_hasTextureCords, m_hasNormals, m_hasTangents, m_hasMaterial;
+	bool m_hasTextureCoords, m_hasNormals, m_hasTangents, m_hasMaterial;
 	bool m_isStacked;
 
 	bool m_animationOrderDirty, m_hasAnimationController;
@@ -119,6 +120,7 @@ public:
 	const glm::mat4& getSkinMatrix(size_t index = 0u) const;
 	unsigned short getNumBones() const;
 	const Bone& getBone(size_t index = 0u) const;
+	const Bone* getRootBone() const;
 	bool hasMaterial() const;
 	const Material& getMaterial() const;
 
@@ -129,6 +131,7 @@ public:
 	std::vector<std::array<unsigned int, 4>>& joints() const;
 	glm::mat4* skinMatrices() const;
 	unsigned int& stride() const;
+	Bone& bone(size_t index = 0u) const;
 	Bone**& bones() const;
 	
 private:

@@ -12,14 +12,19 @@ bool operator== (const Material& m1, const Material& m2) {
 }
 
 void Material::cleanup() {
-
+	m_textures.clear();
+	m_buffer.ambient[0] =  0.0f; m_buffer.ambient[1] = 0.0f; m_buffer.ambient[2] = 0.0f; m_buffer.ambient[3] = 0.0f;
+	m_buffer.diffuse[0] = 0.0f; m_buffer.diffuse[1] = 0.0f; m_buffer.diffuse[2] = 0.0f; m_buffer.diffuse[3] = 0.0f;
+	m_buffer.specular[0] = 0.0f; m_buffer.specular[1] = 0.0f; m_buffer.specular[2] = 0.0f; m_buffer.specular[3] = 0.0f;
+	m_buffer.shininess = 0.0f;
+	m_buffer.alpha = 1.0f;
 }
 
 void Material::addTexture(TextureSlot textureSlot, const std::string& texture) {
 	m_textures[textureSlot] = texture;
 }
 
-const bool Material::hasTexture(TextureSlot textureSlot) const {
+bool Material::hasTexture(TextureSlot textureSlot) const {
 	return m_textures.count(textureSlot);
 }
 
@@ -27,7 +32,7 @@ const std::unordered_map<TextureSlot, std::string>& Material::getTextures() cons
 	return m_textures;
 }
 
-void Material::print() {
+void Material::print() const {
 	std::cout << "Ambient: " << m_buffer.ambient[0] << "  " << m_buffer.ambient[1] << "  " << m_buffer.ambient[2] << "  " << m_buffer.ambient[3] << std::endl;
 	std::cout << "Diffuse: " << m_buffer.diffuse[0] << "  " << m_buffer.diffuse[1] << "  " << m_buffer.diffuse[2] << "  " << m_buffer.diffuse[3] << std::endl;
 	std::cout << "Specular: " << m_buffer.specular[0] << "  " << m_buffer.specular[1] << "  " << m_buffer.specular[2] << "  " << m_buffer.specular[3] << std::endl;
@@ -61,7 +66,7 @@ void Material::setShininess(float shininess) const {
 	m_buffer.shininess = shininess;
 }
 
-const float Material::getShininess() const {
+float Material::getShininess() const {
 	return m_buffer.shininess;
 }
 
@@ -69,7 +74,7 @@ void Material::setAlpha(float alpha) const {
 	m_buffer.alpha = alpha;
 }
 
-const float Material::getAlpha() const {
+float Material::getAlpha() const {
 	return m_buffer.alpha;
 }
 

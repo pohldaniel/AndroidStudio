@@ -221,6 +221,78 @@ void Model::Rewind(const std::vector<float>& vertexBuffer, std::vector<unsigned 
 	}
 }
 
+void Model::Scale(float sx, float sy, float sz, std::vector<float>& vertexBuffer, unsigned int stride) {
+	for (size_t i = 0; i < vertexBuffer.size(); i = i + stride) {
+		vertexBuffer[i] *= sx;
+		vertexBuffer[i + 1u] *= sy;
+		vertexBuffer[i + 2u] *= sz;
+	}
+}
+
+void Model::Rotate(float pitchR, float yawR, float rollR, std::vector<float>& vertexBuffer, unsigned int stride) {
+	float cosY = cosf(yawR);
+	float cosP = cosf(pitchR);
+	float cosR = cosf(rollR);
+	float sinY = sinf(yawR);
+	float sinP = sinf(pitchR);
+	float sinR = sinf(rollR);
+
+	float mtx00 = cosR * cosY - sinR * sinP * sinY;
+	float mtx01 = sinR * cosY + cosR * sinP * sinY;
+	float mtx02 = -cosP * sinY;
+
+	float mtx10 = -sinR * cosP;
+	float mtx11 = cosR * cosP;
+	float mtx12 = sinP;
+
+	float mtx20 = cosR * sinY + sinR * sinP * cosY;
+	float mtx21 = sinR * sinY - cosR * sinP * cosY;
+	float mtx22 = cosP * cosY;
+
+	for (size_t i = 0; i < vertexBuffer.size(); i = i + stride) {
+		float x = mtx00 * vertexBuffer[i] + mtx01 * vertexBuffer[i + 1u] + mtx02 * vertexBuffer[i + 2u];
+		float y = mtx10 * vertexBuffer[i] + mtx11 * vertexBuffer[i + 1u] + mtx12 * vertexBuffer[i + 2u];
+		float z = mtx20 * vertexBuffer[i] + mtx21 * vertexBuffer[i + 1u] + mtx22 * vertexBuffer[i + 2u];
+
+		vertexBuffer[i] = x;
+		vertexBuffer[i + 1u] = y;
+		vertexBuffer[i + 2u] = z;
+
+		if (stride >= 6u) {
+			x = mtx00 * vertexBuffer[i + 5u] + mtx01 * vertexBuffer[i + 6u] + mtx02 * vertexBuffer[i + 7u];
+			y = mtx10 * vertexBuffer[i + 5u] + mtx11 * vertexBuffer[i + 6u] + mtx12 * vertexBuffer[i + 7u];
+			z = mtx20 * vertexBuffer[i + 5u] + mtx21 * vertexBuffer[i + 6u] + mtx22 * vertexBuffer[i + 7u];
+			vertexBuffer[i + 5u] = x;
+			vertexBuffer[i + 6u] = y;
+			vertexBuffer[i + 7u] = z;
+		}
+
+		if (stride >= 14u) {
+			x = mtx00 * vertexBuffer[i + 8u] + mtx01 * vertexBuffer[i + 9u] + mtx02 * vertexBuffer[i + 10u];
+			y = mtx10 * vertexBuffer[i + 8u] + mtx11 * vertexBuffer[i + 9u] + mtx12 * vertexBuffer[i + 10u];
+			z = mtx20 * vertexBuffer[i + 8u] + mtx21 * vertexBuffer[i + 9u] + mtx22 * vertexBuffer[i + 10u];
+			vertexBuffer[i + 8u] = x;
+			vertexBuffer[i + 9u] = y;
+			vertexBuffer[i + 10u] = z;
+
+			x = mtx00 * vertexBuffer[i + 11u] + mtx01 * vertexBuffer[i + 12u] + mtx02 * vertexBuffer[i + 13u];
+			y = mtx10 * vertexBuffer[i + 11u] + mtx11 * vertexBuffer[i + 12u] + mtx12 * vertexBuffer[i + 13u];
+			z = mtx20 * vertexBuffer[i + 11u] + mtx21 * vertexBuffer[i + 12u] + mtx22 * vertexBuffer[i + 13u];
+			vertexBuffer[i + 11u] = x;
+			vertexBuffer[i + 12u] = y;
+			vertexBuffer[i + 13u] = z;
+		}
+	}
+}
+
+void Model::Translate(float dx, float dy, float dz, std::vector<float>& vertexBuffer, unsigned int stride) {
+	for (size_t i = 0; i < vertexBuffer.size(); i = i + stride) {
+		vertexBuffer[i] += dx;
+		vertexBuffer[i + 1u] += dy;
+		vertexBuffer[i + 2u] += dz;
+	}
+}
+
 void Model::GenerateNormals(std::vector<float>& vertexBuffer, std::vector<unsigned int>& indexBuffer, Model& model, bool& hasNormals, unsigned int& stride, unsigned int startIndex, unsigned int endIndex) {
 	if (hasNormals) { return; }
 
@@ -303,8 +375,8 @@ void Model::GenerateNormals(std::vector<float>& vertexBuffer, std::vector<unsign
 	hasNormals = true;
 }
 
-void Model::GenerateNormals(std::vector<float>& vertexCords, std::vector<std::array<int, 10>>& faces, std::vector<float>& normalCords) {
-	normalCords.resize(vertexCords.size());
+void Model::GenerateNormals(std::vector<float>& vertexCoords, std::vector<std::array<int, 10>>& faces, std::vector<float>& normalCoords) {
+	normalCoords.resize(vertexCoords.size());
 	float pVertex0[3] = { 0.0f, 0.0f, 0.0f };
 	float pVertex1[3] = { 0.0f, 0.0f, 0.0f };
 	float pVertex2[3] = { 0.0f, 0.0f, 0.0f };
@@ -315,9 +387,9 @@ void Model::GenerateNormals(std::vector<float>& vertexCords, std::vector<std::ar
 
 	for(auto & face : faces) {
 
-		pVertex0[0] = vertexCords[(face[0] - 1) * 3]; pVertex0[1] = vertexCords[(face[0] - 1) * 3 + 1]; pVertex0[2] = vertexCords[(face[0] - 1) * 3 + 2];
-		pVertex1[0] = vertexCords[(face[1] - 1) * 3]; pVertex1[1] = vertexCords[(face[1] - 1) * 3 + 1]; pVertex1[2] = vertexCords[(face[1] - 1) * 3 + 2];
-		pVertex2[0] = vertexCords[(face[2] - 1) * 3]; pVertex2[1] = vertexCords[(face[2] - 1) * 3 + 1]; pVertex2[2] = vertexCords[(face[2] - 1) * 3 + 2];
+		pVertex0[0] = vertexCoords[(face[0] - 1) * 3]; pVertex0[1] = vertexCoords[(face[0] - 1) * 3 + 1]; pVertex0[2] = vertexCoords[(face[0] - 1) * 3 + 2];
+		pVertex1[0] = vertexCoords[(face[1] - 1) * 3]; pVertex1[1] = vertexCoords[(face[1] - 1) * 3 + 1]; pVertex1[2] = vertexCoords[(face[1] - 1) * 3 + 2];
+		pVertex2[0] = vertexCoords[(face[2] - 1) * 3]; pVertex2[1] = vertexCoords[(face[2] - 1) * 3 + 1]; pVertex2[2] = vertexCoords[(face[2] - 1) * 3 + 2];
 
 		// Calculate triangle face normal.
 		edge1[0] = pVertex1[0] - pVertex0[0];
@@ -332,28 +404,28 @@ void Model::GenerateNormals(std::vector<float>& vertexCords, std::vector<std::ar
 		normal[1] = (edge1[2] * edge2[0]) - (edge1[0] * edge2[2]);
 		normal[2] = (edge1[0] * edge2[1]) - (edge1[1] * edge2[0]);
 
-		normalCords[(face[0] - 1) * 3] = normalCords[(face[0] - 1) * 3] + normal[0];
-		normalCords[(face[0] - 1) * 3 + 1] = normalCords[(face[0] - 1) * 3 + 1] + normal[1];
-		normalCords[(face[0] - 1) * 3 + 2] = normalCords[(face[0] - 1) * 3 + 2] + normal[2];
+		normalCoords[(face[0] - 1) * 3] = normalCoords[(face[0] - 1) * 3] + normal[0];
+		normalCoords[(face[0] - 1) * 3 + 1] = normalCoords[(face[0] - 1) * 3 + 1] + normal[1];
+		normalCoords[(face[0] - 1) * 3 + 2] = normalCoords[(face[0] - 1) * 3 + 2] + normal[2];
 
-		normalCords[(face[1] - 1) * 3] = normalCords[(face[1] - 1) * 3] + normal[0];
-		normalCords[(face[1] - 1) * 3 + 1] = normalCords[(face[1] - 1) * 3 + 1] + normal[1];
-		normalCords[(face[1] - 1) * 3 + 2] = normalCords[(face[1] - 1) * 3 + 2] + normal[2];
+		normalCoords[(face[1] - 1) * 3] = normalCoords[(face[1] - 1) * 3] + normal[0];
+		normalCoords[(face[1] - 1) * 3 + 1] = normalCoords[(face[1] - 1) * 3 + 1] + normal[1];
+		normalCoords[(face[1] - 1) * 3 + 2] = normalCoords[(face[1] - 1) * 3 + 2] + normal[2];
 
-		normalCords[(face[2] - 1) * 3] = normalCords[(face[2] - 1) * 3] + normal[0];
-		normalCords[(face[2] - 1) * 3 + 1] = normalCords[(face[2] - 1) * 3 + 1] + normal[1];
-		normalCords[(face[2] - 1) * 3 + 2] = normalCords[(face[2] - 1) * 3 + 2] + normal[2];
+		normalCoords[(face[2] - 1) * 3] = normalCoords[(face[2] - 1) * 3] + normal[0];
+		normalCoords[(face[2] - 1) * 3 + 1] = normalCoords[(face[2] - 1) * 3 + 1] + normal[1];
+		normalCoords[(face[2] - 1) * 3 + 2] = normalCoords[(face[2] - 1) * 3 + 2] + normal[2];
 
         face[6] = face[0]; face[7] = face[1]; face[8] = face[2];
 	}
 
-	for (int i = 0; i < normalCords.size(); i = i + 3) {
+	for (int i = 0; i < normalCoords.size(); i = i + 3) {
 
-		length = 1.0f / sqrtf(normalCords[i] * normalCords[i] + normalCords[i + 1] * normalCords[i + 1] + normalCords[i + 2] * normalCords[i + 2]);
+		length = 1.0f / sqrtf(normalCoords[i] * normalCoords[i] + normalCoords[i + 1] * normalCoords[i + 1] + normalCoords[i + 2] * normalCoords[i + 2]);
 
-		normalCords[i] *= length;
-		normalCords[i + 1] *= length;
-		normalCords[i + 2] *= length;
+		normalCoords[i] *= length;
+		normalCoords[i + 1] *= length;
+		normalCoords[i + 2] *= length;
 	}
 }
 
@@ -530,14 +602,14 @@ void Model::GenerateTangents(std::vector<float>& vertexBuffer, std::vector<unsig
 	stride = 14;
 }
 
-void Model::GenerateTangents(std::vector<float>& vertexCords, std::vector<float>& textureCords, std::vector<float>& normalCords, std::vector<std::array<int, 10>>& faces, std::vector<float>& tangentCords, std::vector<float>& bitangentCords) {
+void Model::GenerateTangents(std::vector<float>& vertexCoords, std::vector<float>& textureCoords, std::vector<float>& normalCoords, std::vector<std::array<int, 10>>& faces, std::vector<float>& tangentCoords, std::vector<float>& bitangentCoords) {
 
-	if (textureCords.empty()) return;
+	if (textureCoords.empty()) return;
 
-	tangentCords.resize(vertexCords.size());
-	bitangentCords.resize(vertexCords.size());
-	std::vector<float> tmpNormalCords;
-	tmpNormalCords.resize(vertexCords.size());
+	tangentCoords.resize(vertexCoords.size());
+	bitangentCoords.resize(vertexCoords.size());
+	std::vector<float> tmpNormalCoords;
+	tmpNormalCoords.resize(vertexCoords.size());
 
 	float pVertex0[5] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 	float pVertex1[5] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
@@ -552,23 +624,23 @@ void Model::GenerateTangents(std::vector<float>& vertexCords, std::vector<float>
 	float det = 0.0f;
 
 	for(auto & face : faces) {
-		pVertex0[0] = vertexCords[(face[0] - 1) * 3]; pVertex0[1] = vertexCords[(face[0] - 1) * 3 + 1]; pVertex0[2] = vertexCords[(face[0] - 1) * 3 + 2];
-		pVertex0[3] = textureCords[(face[3] - 1) * 2]; pVertex0[4] = textureCords[(face[3] - 1) * 2 + 1];
-		tmpNormalCords[(face[0] - 1) * 3] = normalCords[(face[6] - 1) * 3];
-		tmpNormalCords[(face[0] - 1) * 3 + 1] = normalCords[(face[6] - 1) * 3 + 1];
-		tmpNormalCords[(face[0] - 1) * 3 + 2] = normalCords[(face[6] - 1) * 3 + 2];
+		pVertex0[0] = vertexCoords[(face[0] - 1) * 3]; pVertex0[1] = vertexCoords[(face[0] - 1) * 3 + 1]; pVertex0[2] = vertexCoords[(face[0] - 1) * 3 + 2];
+		pVertex0[3] = textureCoords[(face[3] - 1) * 2]; pVertex0[4] = textureCoords[(face[3] - 1) * 2 + 1];
+		tmpNormalCoords[(face[0] - 1) * 3] = normalCoords[(face[6] - 1) * 3];
+		tmpNormalCoords[(face[0] - 1) * 3 + 1] = normalCoords[(face[6] - 1) * 3 + 1];
+		tmpNormalCoords[(face[0] - 1) * 3 + 2] = normalCoords[(face[6] - 1) * 3 + 2];
 
-		pVertex1[0] = vertexCords[(face[1] - 1) * 3]; pVertex1[1] = vertexCords[(face[1] - 1) * 3 + 1]; pVertex1[2] = vertexCords[(face[1] - 1) * 3 + 2];
-		pVertex1[3] = textureCords[(face[4] - 1) * 2]; pVertex1[4] = textureCords[(face[4] - 1) * 2 + 1];
-		tmpNormalCords[(face[1] - 1) * 3] = normalCords[(face[7] - 1) * 3];
-		tmpNormalCords[(face[1] - 1) * 3 + 1] = normalCords[(face[7] - 1) * 3 + 1];
-		tmpNormalCords[(face[1] - 1) * 3 + 2] = normalCords[(face[7] - 1) * 3 + 2];
+		pVertex1[0] = vertexCoords[(face[1] - 1) * 3]; pVertex1[1] = vertexCoords[(face[1] - 1) * 3 + 1]; pVertex1[2] = vertexCoords[(face[1] - 1) * 3 + 2];
+		pVertex1[3] = textureCoords[(face[4] - 1) * 2]; pVertex1[4] = textureCoords[(face[4] - 1) * 2 + 1];
+		tmpNormalCoords[(face[1] - 1) * 3] = normalCoords[(face[7] - 1) * 3];
+		tmpNormalCoords[(face[1] - 1) * 3 + 1] = normalCoords[(face[7] - 1) * 3 + 1];
+		tmpNormalCoords[(face[1] - 1) * 3 + 2] = normalCoords[(face[7] - 1) * 3 + 2];
 
-		pVertex2[0] = vertexCords[(face[2] - 1) * 3]; pVertex2[1] = vertexCords[(face[2] - 1) * 3 + 1]; pVertex2[2] = vertexCords[(face[2] - 1) * 3 + 2];
-		pVertex2[3] = textureCords[(face[5] - 1) * 2]; pVertex2[4] = textureCords[(face[5] - 1) * 2 + 1];
-		tmpNormalCords[(face[2] - 1) * 3] = normalCords[(face[8] - 1) * 3];
-		tmpNormalCords[(face[2] - 1) * 3 + 1] = normalCords[(face[8] - 1) * 3 + 1];
-		tmpNormalCords[(face[2] - 1) * 3 + 2] = normalCords[(face[8] - 1) * 3 + 2];
+		pVertex2[0] = vertexCoords[(face[2] - 1) * 3]; pVertex2[1] = vertexCoords[(face[2] - 1) * 3 + 1]; pVertex2[2] = vertexCoords[(face[2] - 1) * 3 + 2];
+		pVertex2[3] = textureCoords[(face[5] - 1) * 2]; pVertex2[4] = textureCoords[(face[5] - 1) * 2 + 1];
+		tmpNormalCoords[(face[2] - 1) * 3] = normalCoords[(face[8] - 1) * 3];
+		tmpNormalCoords[(face[2] - 1) * 3 + 1] = normalCoords[(face[8] - 1) * 3 + 1];
+		tmpNormalCoords[(face[2] - 1) * 3 + 2] = normalCoords[(face[8] - 1) * 3 + 2];
 
 		edge1[0] = pVertex1[0] - pVertex0[0];
 		edge1[1] = pVertex1[1] - pVertex0[1];
@@ -608,39 +680,39 @@ void Model::GenerateTangents(std::vector<float>& vertexCords, std::vector<float>
 			bitangent[2] = (-texEdge2[0] * edge1[2] + texEdge1[0] * edge2[2]) * det;
 		}
 
-		tangentCords[(face[0] - 1) * 3] = tangentCords[(face[0] - 1) * 3] + tangent[0];
-		tangentCords[(face[0] - 1) * 3 + 1] = tangentCords[(face[0] - 1) * 3 + 1] + tangent[1];
-		tangentCords[(face[0] - 1) * 3 + 2] = tangentCords[(face[0] - 1) * 3 + 2] + tangent[2];
+		tangentCoords[(face[0] - 1) * 3] = tangentCoords[(face[0] - 1) * 3] + tangent[0];
+		tangentCoords[(face[0] - 1) * 3 + 1] = tangentCoords[(face[0] - 1) * 3 + 1] + tangent[1];
+		tangentCoords[(face[0] - 1) * 3 + 2] = tangentCoords[(face[0] - 1) * 3 + 2] + tangent[2];
 
-		tangentCords[(face[1] - 1) * 3] = tangentCords[(face[1] - 1) * 3] + tangent[0];
-		tangentCords[(face[1] - 1) * 3 + 1] = tangentCords[(face[1] - 1) * 3 + 1] + tangent[1];
-		tangentCords[(face[1] - 1) * 3 + 2] = tangentCords[(face[1] - 1) * 3 + 2] + tangent[2];
+		tangentCoords[(face[1] - 1) * 3] = tangentCoords[(face[1] - 1) * 3] + tangent[0];
+		tangentCoords[(face[1] - 1) * 3 + 1] = tangentCoords[(face[1] - 1) * 3 + 1] + tangent[1];
+		tangentCoords[(face[1] - 1) * 3 + 2] = tangentCoords[(face[1] - 1) * 3 + 2] + tangent[2];
 
-		tangentCords[(face[2] - 1) * 3] = tangentCords[(face[2] - 1) * 3] + tangent[0];
-		tangentCords[(face[2] - 1) * 3 + 1] = tangentCords[(face[2] - 1) * 3 + 1] + tangent[1];
-		tangentCords[(face[2] - 1) * 3 + 2] = tangentCords[(face[2] - 1) * 3 + 2] + tangent[2];
+		tangentCoords[(face[2] - 1) * 3] = tangentCoords[(face[2] - 1) * 3] + tangent[0];
+		tangentCoords[(face[2] - 1) * 3 + 1] = tangentCoords[(face[2] - 1) * 3 + 1] + tangent[1];
+		tangentCoords[(face[2] - 1) * 3 + 2] = tangentCoords[(face[2] - 1) * 3 + 2] + tangent[2];
 
-		bitangentCords[(face[0] - 1) * 3] = bitangentCords[(face[0] - 1) * 3] + bitangent[0];
-		bitangentCords[(face[0] - 1) * 3 + 1] = bitangentCords[(face[0] - 1) * 3 + 1] + bitangent[1];
-		bitangentCords[(face[0] - 1) * 3 + 2] = bitangentCords[(face[0] - 1) * 3 + 2] + bitangent[2];
+		bitangentCoords[(face[0] - 1) * 3] = bitangentCoords[(face[0] - 1) * 3] + bitangent[0];
+		bitangentCoords[(face[0] - 1) * 3 + 1] = bitangentCoords[(face[0] - 1) * 3 + 1] + bitangent[1];
+		bitangentCoords[(face[0] - 1) * 3 + 2] = bitangentCoords[(face[0] - 1) * 3 + 2] + bitangent[2];
 
-		bitangentCords[(face[1] - 1) * 3] = bitangentCords[(face[1] - 1) * 3] + bitangent[0];
-		bitangentCords[(face[1] - 1) * 3 + 1] = bitangentCords[(face[1] - 1) * 3 + 1] + bitangent[1];
-		bitangentCords[(face[1] - 1) * 3 + 2] = bitangentCords[(face[1] - 1) * 3 + 2] + bitangent[2];
+		bitangentCoords[(face[1] - 1) * 3] = bitangentCoords[(face[1] - 1) * 3] + bitangent[0];
+		bitangentCoords[(face[1] - 1) * 3 + 1] = bitangentCoords[(face[1] - 1) * 3 + 1] + bitangent[1];
+		bitangentCoords[(face[1] - 1) * 3 + 2] = bitangentCoords[(face[1] - 1) * 3 + 2] + bitangent[2];
 
-		bitangentCords[(face[2] - 1) * 3] = bitangentCords[(face[2] - 1) * 3] + bitangent[0];
-		bitangentCords[(face[2] - 1) * 3 + 1] = bitangentCords[(face[2] - 1) * 3 + 1] + bitangent[1];
-		bitangentCords[(face[2] - 1) * 3 + 2] = bitangentCords[(face[2] - 1) * 3 + 2] + bitangent[2];
+		bitangentCoords[(face[2] - 1) * 3] = bitangentCoords[(face[2] - 1) * 3] + bitangent[0];
+		bitangentCoords[(face[2] - 1) * 3 + 1] = bitangentCoords[(face[2] - 1) * 3 + 1] + bitangent[1];
+		bitangentCoords[(face[2] - 1) * 3 + 2] = bitangentCoords[(face[2] - 1) * 3 + 2] + bitangent[2];
 	}
 
 	float nDotT = 0.0f;
 	float bDotB = 0.0f;
 	float length = 0.0f;
 
-	for (unsigned int i = 0; i < tangentCords.size(); i = i + 3) {
+	for (unsigned int i = 0; i < tangentCoords.size(); i = i + 3) {
 
-		normal[0] = tmpNormalCords[i]; normal[1] = tmpNormalCords[i + 1]; normal[2] = tmpNormalCords[i + 2];
-		tangent[0] = tangentCords[i]; tangent[1] = tangentCords[i + 1]; tangent[2] = tangentCords[i + 2];
+		normal[0] = tmpNormalCoords[i]; normal[1] = tmpNormalCoords[i + 1]; normal[2] = tmpNormalCoords[i + 2];
+		tangent[0] = tangentCoords[i]; tangent[1] = tangentCoords[i + 1]; tangent[2] = tangentCoords[i + 2];
 
 		// Gram-Schmidt orthogonalize tangent with normal.
 		nDotT = normal[0] * tangent[0] +
@@ -656,31 +728,31 @@ void Model::GenerateTangents(std::vector<float>& vertexCords, std::vector<float>
 			tangent[1] * tangent[1] +
 			tangent[2] * tangent[2]);
 
-		tangentCords[i] *= length;
-		tangentCords[i + 1] *= length;
-		tangentCords[i + 2] *= length;
+		tangentCoords[i] *= length;
+		tangentCoords[i + 1] *= length;
+		tangentCoords[i + 2] *= length;
 
-		bitangent[0] = (normal[1] * tangentCords[i + 2]) -
-		               (normal[2] * tangentCords[i + 1]);
-		bitangent[1] = (normal[2] * tangentCords[i]) -
-		               (normal[0] * tangentCords[i + 2]);
-		bitangent[2] = (normal[0] * tangentCords[i + 1]) -
-		               (normal[1] * tangentCords[i]);
+		bitangent[0] = (normal[1] * tangentCoords[i + 2]) -
+		               (normal[2] * tangentCoords[i + 1]);
+		bitangent[1] = (normal[2] * tangentCoords[i]) -
+		               (normal[0] * tangentCoords[i + 2]);
+		bitangent[2] = (normal[0] * tangentCoords[i + 1]) -
+		               (normal[1] * tangentCoords[i]);
 
-		bDotB = bitangent[0] * bitangentCords[i] +
-		        bitangent[1] * bitangentCords[i + 1] +
-		        bitangent[2] * bitangentCords[i + 2];
+		bDotB = bitangent[0] * bitangentCoords[i] +
+		        bitangent[1] * bitangentCoords[i + 1] +
+		        bitangent[2] * bitangentCoords[i + 2];
 
 		// Calculate handedness
 		if (bDotB < 0.0f) {
-			bitangentCords[i] = -bitangent[0];
-			bitangentCords[i + 1] = -bitangent[1];
-			bitangentCords[i + 2] = -bitangent[2];
+			bitangentCoords[i] = -bitangent[0];
+			bitangentCoords[i + 1] = -bitangent[1];
+			bitangentCoords[i + 2] = -bitangent[2];
 
 		}else {
-			bitangentCords[i] = bitangent[0];
-			bitangentCords[i + 1] = bitangent[1];
-			bitangentCords[i + 2] = bitangent[2];
+			bitangentCoords[i] = bitangent[0];
+			bitangentCoords[i + 1] = bitangent[1];
+			bitangentCoords[i + 2] = bitangent[2];
 		}
 
 	}

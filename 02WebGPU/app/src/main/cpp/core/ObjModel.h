@@ -22,11 +22,11 @@
 struct IndexBufferCreator {
 
 	std::vector<std::array<int, 10>> face;
-	std::vector<float> positionCordsIn;
-	std::vector<float> normalCordsIn;
-	std::vector<float> textureCordsIn;
-	std::vector<float> tangentCordsIn;
-	std::vector<float> bitangentCordsIn;
+	std::vector<float> positionCoordsIn;
+	std::vector<float> normalCoordsIn;
+	std::vector<float> textureCoordsIn;
+	std::vector<float> tangentCoordsIn;
+	std::vector<float> bitangentCoordsIn;
 
 	std::vector <float> vertexBufferOut;
 	std::vector<unsigned int> indexBufferOut;
@@ -53,9 +53,12 @@ public:
 	~ObjModel() override;
 
 	void loadModel(const char* filename, bool isStacked = false, bool withoutNormals = false, bool generateSmoothNormals = false, bool generateFlatNormals = false, bool generateSmoothTangents = false, bool flipYZ = false, bool flipWinding = false, bool rescale = false);
-	void loadModel(const char* filename, const glm::vec3& axis, float degrees, const glm::vec3& translate = glm::vec3(0.0f, 0.0f, 0.0f), float scale = 1.0f, bool isStacked = false, bool withoutNormals = false, bool generateSmoothNormals = false, bool generateFlatNormals = false, bool generateSmoothTangents = false, bool flipYZ = false, bool flipWinding = false, bool rescale = false);
 	void loadModelCpu(const char* filename, bool isStacked = false, bool withoutNormals = false, bool generateSmoothNormals = false, bool generateFlatNormals = false, bool generateSmoothTangents = false, bool flipYZ = false, bool flipWinding = false, bool rescale = false);
-	void loadModelCpu(const char* filename, const glm::vec3& axis, float degrees, const glm::vec3& translate = glm::vec3(0.0f, 0.0f, 0.0f), float scale = 1.0f, bool asStacked = false, bool withoutNormals = false, bool generateSmoothNormals = false, bool generateFlatNormals = false, bool generateSmoothTangents = false, bool flipYZ = false, bool flipWinding = false, bool rescale = false);
+
+	void scale(float sx, float sy, float sz);
+	void scale(float s);
+	void rotate(float pitch, float yaw, float roll);
+	void translate(float dx, float dy, float dz);
 
 	const glm::vec3& getCenter() const;
 
@@ -120,7 +123,7 @@ public:
 	unsigned int getNumberOfTriangles() const;
 	void cleanup();
 
-	const bool hasMaterial() const;
+	bool hasMaterial() const;
 	
 private:
 
