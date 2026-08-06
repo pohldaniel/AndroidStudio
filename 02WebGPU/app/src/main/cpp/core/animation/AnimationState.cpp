@@ -196,7 +196,7 @@ void AnimationState::applyToModel() {
 		}if (track->m_channelMask & CHANNEL_SCALE)
 			newScale = glm::lerp(keyFrame.m_scale, nextKeyFrame.m_scale, t);
 
-		if (finalWeight < 1.0f) {
+		if (finalWeight <= 1.0f) {
 			if (track->m_channelMask & CHANNEL_POSITION)
 				newPosition = glm::lerp(bone->m_position, newPosition, finalWeight);
 			if (track->m_channelMask & CHANNEL_ROTATION)

@@ -26,8 +26,8 @@ add_subdirectory(WebGPU)
 add_subdirectory(States)
 add_subdirectory(Nuklear)
 
-add_library(native SHARED Native.cpp InputTouch.cpp DeltaClock.cpp RenderThread.cpp AssetIO.cpp)
-target_include_directories(native PRIVATE InputTouch.h DeltaClock.h RenderThread.h AssetIO.h)
+add_library(native SHARED bullet_store.cpp Native.cpp InputTouch.cpp DeltaClock.cpp RenderThread.cpp AssetIO.cpp)
+target_include_directories(native PRIVATE bullet_store.h InputTouch.h DeltaClock.h RenderThread.h AssetIO.h)
 target_link_libraries(native core shape states webgpu nuklear freeimage assimp zlib wgpu android log)
 
 target_include_directories(webgpu PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Shape")

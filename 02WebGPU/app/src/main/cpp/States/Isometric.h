@@ -17,8 +17,15 @@
 #include <core/AssimpModel.h>
 #include <core/ObjModel.h>
 #include <core/TrackBall.h>
+#include <core/Transform.h>
+
+#include "bullet_store.h"
 
 class Isometric : public State {
+    struct Wiggly {
+        glm::vec3 nosePos;
+        float time;
+    };
 
 public:
 
@@ -36,28 +43,46 @@ public:
 
 private:
 
-	std::vector<WGPUBindGroupLayout> OnBindGroupLayouts();
-	std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsTexture();
-	std::vector<WGPUBindGroup> OnBindGroups();
-	std::vector<WGPUBindGroup> OnBindGroupsTexture();
+    std::vector<WGPUBindGroupLayout> OnBindGroupLayouts();
+    std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsFloor();
+    std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsWiggly();
+    std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsBullet();
 
-	void renderUi(const WGPURenderPassEncoder& renderPassEncoder);
+    std::vector<WGPUBindGroup> OnBindGroups();
+    std::vector<WGPUBindGroup> OnBindGroupsFloor();
+    std::vector<WGPUBindGroup> OnBindGroupsBullet();
 
-	bool m_initUi = true;
-	bool m_drawUi = false;
-	bool m_isDeath = false;
+    void renderUi(const WGPURenderPassEncoder& renderPassEncoder);
+    float getLookAtYRotation(const glm::vec3& objectPos, const glm::vec3& targetPos);
 
-	Camera m_camera;
-	Uniforms m_uniforms;
-	TrackBall m_trackball;
-	JoystickResult m_joystickResult;
-	RotationButtonResult m_rotationButtonResult;
+    bool m_initUi = true;
+    bool m_drawUi = false;
+    bool m_isDeath = false;
 
-	AnimatedModel m_player;
-	AnimationController m_animationController;
-	Shape m_floor;
+    Camera m_camera;
+    Uniforms m_uniforms;
+    TrackBall m_trackball;
+    JoystickResult m_joystickResult;
+    RotationButtonResult m_rotationButtonResult;
+    Wiggly m_wiggly;
+    BulletStore m_bulletStore;
 
-	WgpBuffer m_uniformBuffer, m_skinBuffer;
-	WgpModel m_wgpPlayer, m_wgpFloor;
-	WgpTexture m_wgpFloorD;
+    AssimpModel m_enemy;
+    AnimatedModel m_player;
+    Shape m_floor, m_bullet;
+    Animation m_full;
+    WgpBuffer m_uniformBuffer, m_instanceBuffer, m_wigglyBuffer, m_skinBuffer, m_rotationBuffer, m_offsetBuffer;
+    WgpModel m_wgpPlayer, m_wgpFloor, m_wgpEnemy, m_wgpBullet;
+    WgpTexture m_wgpFloorD, m_wgpEnemyD, m_wgpBulletTexture;
+
+    float prev_idleWeight = 0.0f;
+    float prev_rightWeight = 0.0f;
+    float prev_forwardWeight = 0.0f;
+    float prev_backWeight = 0.0f;
+    float prev_leftWeight = 0.0f;
+    const float animTransitionTime = 0.2f;
+    float deathTime = -1.0f;
+    float lastFireTime = 0.0f;
+
+    static WGPUBindGroup CreateBindGroup(const WgpBuffer& uniformBuffer, const WgpBuffer& wigglyBuffer, const WgpTexture& texture);
 };

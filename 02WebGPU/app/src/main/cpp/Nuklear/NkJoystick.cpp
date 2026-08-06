@@ -252,8 +252,7 @@ void nk_virtual_rotation_button(struct nk_context* ctx, float size_px, int touch
 		}
 
 		if (out.isRotating && distance > 5.0f) {
-			float angle_rad = std::atan2(-dy, dx);
-			if (angle_rad < 0.0f) angle_rad += 2.0f * M_PI;
+			float angle_rad = std::atan2(dx, dy);
 			out.degrees = angle_rad * (180.0f / M_PI);
 		}else if (out.buttonDown) {
 			out.buttonDown = (distance <= inner_radius);
@@ -267,8 +266,8 @@ void nk_virtual_rotation_button(struct nk_context* ctx, float size_px, int touch
 	float current_rad = out.degrees * (M_PI / 180.0f);
 
 	struct nk_vec2 knob_pos;
-	knob_pos.x = center.x + outer_radius * std::cos(current_rad);
-	knob_pos.y = center.y - outer_radius * std::sin(current_rad);
+	knob_pos.x = center.x + outer_radius * std::sinf(current_rad);
+	knob_pos.y = center.y + outer_radius * std::cosf(current_rad);
 
 	struct nk_command_buffer* canvas = nk_window_get_canvas(ctx);
 	if (canvas) {
@@ -294,8 +293,8 @@ void nk_virtual_rotation_button(struct nk_context* ctx, float size_px, int touch
 
 		for (int i = 0; i < 3; ++i) {
 			float wing_angle = current_rad + (i * 2.0f * M_PI / 3.0f);
-			float line_end_x = center.x + inner_radius * std::cos(wing_angle);
-			float line_end_y = center.y - inner_radius * std::sin(wing_angle);
+			float line_end_x = center.x + inner_radius * std::sinf(wing_angle);
+			float line_end_y = center.y + inner_radius * std::cosf(wing_angle);
 			nk_stroke_line(canvas, center.x, center.y, line_end_x, line_end_y, 3.0f, button_line_color);
 		}
 	}
