@@ -194,7 +194,7 @@ void WgpMesh::addColor(std::array<float, 4> color) {
 		WGPUFutureWaitInfo futureWaitInfo = {};
 		futureWaitInfo.future = future;
 		futureWaitInfo.completed = false;
-		WGPUWaitStatus status = wgpuInstanceWaitAny(wgpContext.instance, 1u, &futureWaitInfo, UINT64_MAX);
+		wgpuInstanceWaitAny(wgpContext.instance, 1u, &futureWaitInfo, UINT64_MAX);
 	
 		stagingBuffer.markForDelete();
 	}

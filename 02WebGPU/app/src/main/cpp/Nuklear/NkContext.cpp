@@ -234,10 +234,7 @@ void nkDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescri
 	nk_buffer_clear(&nkContext.indexBuffer);
 
 	nk_convert(&nkContext.context, &nkContext.commandBuffer, &nkContext.vertexBuffer, &nkContext.indexBuffer, &nkContext.convertConfig);
-	
 
-	uint32_t vertex_count = nkContext.vertexBuffer.needed / sizeof(nk_vertex);
-    nk_vertex* vertices = (nk_vertex*)nkContext.vertexBufferData;
 	nkContext.indexBuffer.needed = (nkContext.indexBuffer.needed + 3) & ~3;
 	wgpuQueueWriteBuffer(wgpContext.queue, nkContext.wgpVertexBuffer.getBuffer(), 0, nkContext.vertexBufferData, nkContext.vertexBuffer.needed);
 	wgpuQueueWriteBuffer(wgpContext.queue, nkContext.wgpIndexBuffer.getBuffer(), 0, nkContext.indexBufferData, nkContext.indexBuffer.needed);

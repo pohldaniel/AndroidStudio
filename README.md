@@ -9,8 +9,14 @@ cmake .. -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_HOME%/build/cma
 OpenAL Oboe config_backends.h -> #define HAVE_OBOE 1 | CMakeFiles\OpenAL.dir\build.make add oboe.cpp | flags.make add -IC:/oboe/include
 
 cmake .. -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_HOME%/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 
-cmake .. -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_HOME%/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 -DCMAKE_BUILD_TYPE=Release -DLIBTYPE=STATIC -DALSOFT_EXAMPLES=OFF -DALSOFT_UTILS=OFF -DALSOFT_TESTS=OFF -DALSOFT_INSTALL=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake .. -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_HOME%/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 -DCMAKE_BUILD_TYPE=MinSizeRel -DLIBTYPE=STATIC -DALSOFT_BACKEND_OPENSL=OFF -DALSOFT_BACKEND_WAVE=OFF -DALSOFT_EMBED_HRTF_DATA=OFF -DALSOFT_EXAMPLES=OFF -DALSOFT_UTILS=OFF -DALSOFT_TESTS=OFF -DALSOFT_INSTALL=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DOBOE_SOURCE="C:/oboe" -DALSOFT_BACKEND_OBOE=ON -DCMAKE_CXX_FLAGS="-fvisibility=hidden -fvisibility-inlines-hidden -fdata-sections -ffunction-sections" -DCMAKE_C_FLAGS="-fvisibility=hidden -fdata-sections -ffunction-sections"
 
 
 cmake .. -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_HOME%/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86_64 -DANDROID_PLATFORM=android-24 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 
-cmake .. -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_HOME%/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86_64 -DANDROID_PLATFORM=android-24 -DCMAKE_BUILD_TYPE=Release -DLIBTYPE=STATIC -DALSOFT_EXAMPLES=OFF -DALSOFT_UTILS=OFF -DALSOFT_TESTS=OFF -DALSOFT_INSTALL=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake .. -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_HOME%/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86_64 -DANDROID_PLATFORM=android-24 -DCMAKE_BUILD_TYPE=MinSizeRel -DLIBTYPE=STATIC -DALSOFT_BACKEND_OPENSL=OFF -DALSOFT_BACKEND_WAVE=OFF -DALSOFT_EMBED_HRTF_DATA=OFF -DALSOFT_EXAMPLES=OFF -DALSOFT_UTILS=OFF -DALSOFT_TESTS=OFF -DALSOFT_INSTALL=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DOBOE_SOURCE="C:/oboe" -DALSOFT_BACKEND_OBOE=ON -DCMAKE_CXX_FLAGS="-fvisibility=hidden -fvisibility-inlines-hidden -fdata-sections -ffunction-sections" -DCMAKE_C_FLAGS="-fvisibility=hidden -fdata-sections -ffunction-sections"
+
+
+cmake --build .
+
+
+"C:\Users\pohld\AppData\Local\Android\Sdk\ndk\30.0.14904198\toolchains\llvm\prebuilt\windows-x86_64\bin\llvm-strip.exe" --strip-debug libopenal.a

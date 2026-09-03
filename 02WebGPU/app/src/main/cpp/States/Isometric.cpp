@@ -228,13 +228,9 @@ void Isometric::update() {
         m_player.translate(playerDirection[0] * 2.0f * m_dt, playerDirection[1] * 2.0f * m_dt, playerDirection[2] * 2.0f * m_dt);
     }
 
-    float movementTheta = std::atan2(-playerDirection[2], playerDirection[0]);
-
-    if (movementTheta < 0.0f)
-        movementTheta += glm::pi<float>() * 2.0f;
-
+    float movementTheta = std::atan2(playerDirection[0], playerDirection[2]);
     const float thetaDelta = movementTheta - glm::radians(m_rotationButtonResult.degrees);
-    const glm::vec2 movementAnim = !playerMove ? glm::vec2(0.0f, 0.0f) : glm::vec2(cosf(thetaDelta), -sinf(thetaDelta));
+    const glm::vec2 movementAnim = !playerMove ? glm::vec2(0.0f, 0.0f) : glm::vec2(sinf(thetaDelta), cos(thetaDelta));
 
     prev_idleWeight = std::max(0.0f, prev_idleWeight - m_dt / animTransitionTime);
     prev_rightWeight = std::max(0.0f, prev_rightWeight - m_dt / animTransitionTime);

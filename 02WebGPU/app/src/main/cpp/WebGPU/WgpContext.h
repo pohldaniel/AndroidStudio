@@ -47,10 +47,7 @@ extern "C" {
     WGPUBuffer wgpCreateBuffer(const void* data, uint32_t size, WGPUBufferUsage bufferUsage);
     WGPUShaderModule wgpCreateShaderFromFile(const std::string& path);
     WGPUShaderModule wgpCreateShaderFromString(const std::string& string);
-    std::vector<WGPUVertexAttribute>& wgpVertexAttribute(VertexLayoutSlot vertexLayoutSlot);
-    std::vector<WGPUVertexBufferLayout>& wgpVertexBufferLayout(VertexLayoutSlot vertexLayoutSlot);
     WGPUTextureFormat wgpMatchingFormat(WGPUSurfaceCapabilities& surfaceCapabilities, WGPUTextureFormat textureFormat);
-
     void wgpCreateVertexBufferLayout(VertexLayoutSlot slot = VL_PTN);
     void wgpShutDown();
 	void wgpCleanState();
@@ -69,6 +66,9 @@ extern "C" {
     void wgpDraw();
     void wgpSubmitQueue();
 }
+
+std::vector<WGPUVertexAttribute>& wgpVertexAttribute(VertexLayoutSlot vertexLayoutSlot);
+std::vector<WGPUVertexBufferLayout>& wgpVertexBufferLayout(VertexLayoutSlot vertexLayoutSlot);
 
 enum SamplerSlot {
 	SS_LINEAR_CLAMP,
