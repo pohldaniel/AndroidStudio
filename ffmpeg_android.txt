@@ -1,0 +1,91 @@
+wget https://dl.google.com/android/repository/android-ndk-r30-beta1-linux.zip
+
+unzip android-ndk-r30-beta1-linux.zip
+
+sudo apt-get update
+sudo apt-get install -y build-essential gcc g++
+sudo apt-get update && sudo apt-get install -y pkg-config
+
+echo 'export ANDROID_NDK_HOME=$HOME/android/ndk/android-ndk-r30-beta1' >> ~/.bashrc
+echo 'export PATH=$PATH:$ANDROID_NDK_HOME' >> ~/.bashrc
+
+
+export NDK_PATH="$HOME/android/ndk/android-ndk-r30-beta1"
+export TOOLCHAIN="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64"
+export API="24"
+
+export AR="$TOOLCHAIN/bin/llvm-ar"
+
+ls $HOME/android/ndk/android-ndk-r30-beta1
+make install DESTDIR=installed/arm64-v8a
+make clean
+make distclean
+
+./configure \
+  --host-cc="$TOOLCHAIN/bin/clang" \
+  --cc="$TOOLCHAIN/bin/aarch64-linux-android24-clang" \
+  --cxx="$TOOLCHAIN/bin/aarch64-linux-android24-clang++" \
+  --ar="$TOOLCHAIN/bin/llvm-ar" \
+  --strip="$TOOLCHAIN/bin/llvm-strip" \
+  --target-os=android \
+  --arch=aarch64 \
+  --cpu=armv8-a \
+  --enable-cross-compile \
+  --enable-pic \
+  --extra-cflags="-fPIC -DPIC" \
+  --extra-cxxflags="-fPIC -DPIC" \
+  --disable-asm \
+  --disable-x86asm \
+  --disable-inline-asm \
+  --disable-stripping \
+  --disable-doc \
+  --disable-debug \
+  --disable-shared \
+  --disable-programs \
+  --disable-ffplay \
+  --disable-ffprobe \
+  --disable-ffmpeg \
+  --disable-sdl2 \
+  --enable-static \
+  --enable-avcodec \
+  --enable-avformat \
+  --enable-avfilter \
+  --enable-avdevice \
+  --enable-avutil \
+  --enable-swresample \
+  --enable-swscale
+
+./configure \
+  --host-cc="$TOOLCHAIN/bin/clang" \
+  --cc="$TOOLCHAIN/bin/x86_64-linux-android24-clang" \
+  --cxx="$TOOLCHAIN/bin/x86_64-linux-android24-clang++" \
+  --ar="$TOOLCHAIN/bin/llvm-ar" \
+  --strip="$TOOLCHAIN/bin/llvm-strip" \
+  --target-os=android \
+  --arch=x86_64 \
+  --cpu=x86-64 \
+  --enable-cross-compile \
+  --enable-pic \
+  --extra-cflags="-fPIC -DPIC" \
+  --extra-cxxflags="-fPIC -DPIC" \
+  --disable-x86asm \
+  --disable-inline-asm \
+  --disable-stripping \
+  --disable-doc \
+  --disable-debug \
+  --disable-shared \
+  --disable-programs \
+  --disable-ffplay \
+  --disable-ffprobe \
+  --disable-ffmpeg \
+  --disable-sdl2 \
+  --enable-static \
+  --enable-avcodec \
+  --enable-avformat \
+  --enable-avfilter \
+  --enable-avdevice \
+  --enable-avutil \
+  --enable-swresample \
+  --enable-swscale
+  
+make install DESTDIR=installed/x86_64
