@@ -89,7 +89,7 @@ void nkInit(float width, float height) {
 	nk_style_default(&nkContext.context);
 }
 
-void nkInitFont(const char* path) {
+void nkInitFont(const char* path, float fontSize) {
 	nk_font_atlas_init_default(&nkContext.fontAtlas);
 	nk_font_atlas_begin(&nkContext.fontAtlas);
 
@@ -100,11 +100,11 @@ void nkInitFont(const char* path) {
 		struct nk_font_config config_font = nk_font_config(0.0f);
 		config_font.oversample_h = 3;
 		config_font.oversample_v = 3;
-		nkContext.font = nk_font_atlas_add_from_memory(&nkContext.fontAtlas, data, size, BASE_FONT_SIZE, &config_font);
+		nkContext.font = nk_font_atlas_add_from_memory(&nkContext.fontAtlas, data, size, fontSize, &config_font);
 
         AssetIO::Free(data);
 	}else {
-		nkContext.font = nk_font_atlas_add_default(&nkContext.fontAtlas, BASE_FONT_SIZE, nullptr);
+		nkContext.font = nk_font_atlas_add_default(&nkContext.fontAtlas, fontSize, nullptr);
 	}
 
 	const void* image_pixels;

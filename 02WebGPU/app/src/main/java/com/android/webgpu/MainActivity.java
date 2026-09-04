@@ -10,7 +10,7 @@ import android.widget.FrameLayout;
 import androidx.appcompat.widget.Toolbar;
 
 public class MainActivity extends AppCompatActivity {
-    private final String[] appStates = {"Collada", "Wireframe", "Deferred", "Particle", "Volume", "Isometric"};
+    private final String[] appStates = {"Collada", "Wireframe", "Deferred", "Particle", "Volume", "Audio Decode", "Isometric"};
     private static int CurrentStateIndex = 0;
     private View view;
 

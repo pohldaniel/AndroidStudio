@@ -54,14 +54,13 @@
 
 #define MAX_VERTEX_MEMORY (1024u * 1024u)
 #define MAX_INDEX_MEMORY (256u * 1024u)
-#define BASE_FONT_SIZE 16.0f
 
 struct NkContext;
 extern NkContext nkContext;
 
 extern "C" {
 	void nkInit(float width, float height);
-	void nkInitFont(const char* path = nullptr);
+	void nkInitFont(const char* path = nullptr, float fontSize = 16.0f);
 	void nkInitIcon(const char* path);	
 	void nkResize(float width, float height);
 	void nkShutDown();

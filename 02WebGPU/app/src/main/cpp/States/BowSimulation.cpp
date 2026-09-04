@@ -63,7 +63,7 @@ void BowSimulation::OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPUR
 }
 
 void BowSimulation::OnFillBuffer(nk_context& nkCntxt) {
-	nkContext.font->handle.height = BASE_FONT_SIZE * m_uiScale;
+	nkContext.font->handle.height = m_fontsize * m_uiScale;
 	nkContext.font->scale = m_uiScale;
 
 	int joystick_finger = -1;

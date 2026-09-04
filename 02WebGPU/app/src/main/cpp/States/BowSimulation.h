@@ -63,6 +63,7 @@ private:
 	bool m_drawUi = false;
 	bool m_isHovered = false;
 	float m_uiScale = 1.0f;
+	float m_fontsize = 16.0f;
 	float m_scrollDelta = 0.0f;
 	bool m_wasHovered1 = false;
 	bool m_wasHovered2 = false;

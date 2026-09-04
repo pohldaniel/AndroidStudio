@@ -1,9 +1,6 @@
 #include "AudioDecoder.h"
 #include "AssetIO.h"
 
-uint8_t* data;
-uint32_t size;
-
 AudioDecoder::AudioDecoder() {
     m_packet = av_packet_alloc();
     m_frame = av_frame_alloc();
@@ -30,17 +27,57 @@ int read_memory_packet(void* opaque, uint8_t* buf, int buf_size) {
     return read_bytes;
 }
 
+int64_t seek_memory_packet(void* opaque, int64_t offset, int whence) {
+    AVMemBuffer* bd = static_cast<AVMemBuffer*>(opaque);
+    if (!bd) return -1;
+
+    int64_t new_offset = 0;
+
+    switch (whence) {
+        case AVSEEK_SIZE:
+            return bd->total_size;
+        case SEEK_SET:
+            new_offset = offset;
+            break;
+        case SEEK_CUR:
+            new_offset = static_cast<int64_t>(bd->ptr - bd->base) + offset;
+            break;
+        case SEEK_END:
+            new_offset = static_cast<int64_t>(bd->total_size) + offset;
+            break;
+        default:
+            return -1;
+    }
+
+    if (new_offset < 0 || static_cast<size_t>(new_offset) > bd->total_size) {
+        return -1;
+    }
+
+    bd->ptr = bd->base + new_offset;
+    bd->size = bd->total_size - new_offset;
+
+    return new_offset;
+}
+
+void AudioDecoder::init(std::unique_ptr<IAudioOutput> audioOutput){
+    if (audioOutput) {
+        m_audioOutput = std::move(audioOutput);
+        m_audioOutput->init();
+    }
+}
+
 void AudioDecoder::open(const std::string& filename, std::unique_ptr<IAudioOutput> audioOutput) {
 
-    AssetIO::LoadAsset(filename.c_str(), data, size);
+    AssetIO::LoadAsset(filename.c_str(), m_data, m_size);
 
-    m_memBuffer.ptr = data;
-    m_memBuffer.size = size;
+    m_memBuffer.base = m_data;
+    m_memBuffer.ptr = m_data;
+    m_memBuffer.size = m_size;
+    m_memBuffer.total_size = m_size;
 
     m_formatContext = avformat_alloc_context();
     if (!m_formatContext) return;
 
-    // 1. ⚠️ UNBEDINGT NÖTIG: FFmpeg verlangt ein Padding am Ende des IO-Buffers!
     size_t avio_ctx_buffer_size = 4096;
     uint8_t* avio_ctx_buffer = static_cast<uint8_t*>(av_malloc(avio_ctx_buffer_size + AV_INPUT_BUFFER_PADDING_SIZE));
 
@@ -48,19 +85,16 @@ void AudioDecoder::open(const std::string& filename, std::unique_ptr<IAudioOutpu
         return;
     }
 
-    // 2. Den Kontext erstellen
     AVIOContext* avio_ctx = avio_alloc_context(
             avio_ctx_buffer, avio_ctx_buffer_size, 0,
-            &m_memBuffer, &read_memory_packet, nullptr, nullptr
+            &m_memBuffer, &read_memory_packet, nullptr, &seek_memory_packet
     );
 
-    // 3. ⚠️ PROTECTION: Wenn avio_ctx nullptr ist, dürfen wir es NIEMALS an pb übergeben!
     if (!avio_ctx) {
         av_freep(&avio_ctx_buffer);
         return;
     }
 
-    // Erst wenn wir absolut sicher sind, dass avio_ctx gültig ist, zuweisen:
     m_formatContext->pb = avio_ctx;
     m_formatContext->flags |= AVFMT_FLAG_CUSTOM_IO;
 
@@ -91,29 +125,29 @@ void AudioDecoder::open(const std::string& filename, std::unique_ptr<IAudioOutpu
     av_opt_set_int(m_swrContext, "out_sample_rate", 44100, 0);
     av_opt_set_sample_fmt(m_swrContext, "out_sample_fmt", AV_SAMPLE_FMT_S16, 0);
     swr_init(m_swrContext);
-
-    if (audioOutput) {
-        m_audioOutput = std::move(audioOutput);
-        m_audioOutput->init();
-    }
+    init(std::move(audioOutput));
     queryFirstFrame();
+
+    m_isPaused = false;
 }
 
 void AudioDecoder::switchTrack(const std::string& filename) {
     close();
-    m_audioOutput->flush();
-    m_audioStreamIndex = -1;
+    if(m_audioOutput)
+        m_audioOutput->flush();
+
     open(filename, nullptr);
 }
 
 void AudioDecoder::update() {
-    if (!m_codecContext)
+    if (m_isPaused) {
         return;
+    }
 
     int ret = av_read_frame(m_formatContext, m_packet);
 
     if(ret == AVERROR_EOF) {
-        av_seek_frame(m_formatContext, -1, 0, AVSEEK_FLAG_BACKWARD);
+        av_seek_frame(m_formatContext, m_audioStreamIndex, 0, AVSEEK_FLAG_BYTE);
         avcodec_flush_buffers(m_codecContext);
         ret = av_read_frame(m_formatContext, m_packet);
     }
@@ -188,12 +222,34 @@ bool AudioDecoder::decodeAudioFrame(std::vector<uint8_t>& outPcmData) {
 }
 
 void AudioDecoder::close() {
-    if (m_swrContext) 
+    if (m_swrContext) {
         swr_free(&m_swrContext);
+        m_swrContext = nullptr;
+    }
 
-    if (m_codecContext) 
+    if (m_codecContext) {
         avcodec_free_context(&m_codecContext);
+        m_codecContext = nullptr;
+    }
 
-    if (m_formatContext) 
+    if (m_formatContext) {
         avformat_close_input(&m_formatContext);
+        m_formatContext = nullptr;
+    }
+
+    if (m_data) {
+        AssetIO::Free(m_data);
+        m_data = nullptr;
+    }
+
+    m_audioStreamIndex = -1;
+}
+
+void AudioDecoder::pause() {
+    m_isPaused = true;
+    m_audioOutput->pause();
+}
+
+void AudioDecoder::play() {
+    m_isPaused = false;
 }

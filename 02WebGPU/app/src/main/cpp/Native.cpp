@@ -27,6 +27,7 @@
 #include <States/DeferredRendering.h>
 #include <States/ComputeParticleLogo.h>
 #include <States/VolumeRendering.h>
+#include <States/AudioDecode.h>
 #include <States/BowSimulation.h>
 #include <States/Isometric.h>
 
@@ -43,7 +44,6 @@ DeltaClock DeltaClock;
 RenderThread* renderThread = nullptr;
 StateMachine* stateMachine= nullptr;
 States currentState = States::COLLADA;
-AudioDecoder* globalAudioDecoder = nullptr;
 
 State* recoverState(States crrntStt){
     switch(crrntStt){
@@ -57,6 +57,8 @@ State* recoverState(States crrntStt){
             return new ComputeParticleLogo(*stateMachine);
         case VOLUME_RENDERING:
             return new VolumeRendering(*stateMachine);
+        case States::AUDIO_DECODE:
+            return new AudioDecode(*stateMachine);
         case States::BOW_SIMULATION:
             return new BowSimulation(*stateMachine);
         case States::ISOMETRIC:
@@ -68,82 +70,56 @@ extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_wgpInit(
     SoundDevice::Init();
     AssetIO::Init(AAssetManager_fromJava(env, assetManager));
 
-    globalAudioDecoder = new AudioDecoder();
-    globalAudioDecoder->open<OpenALPlayer>("sounds/ambient.mp3");
-
-    //for (int i = 0; i < 30; ++i) {
-    //    globalAudioDecoder->update();
-    //}
-
-    // 4. TEST-SCHLEIFE: Wir simulieren das Update für z.B. 10 Sekunden.
-    // Das blockiert den JNI-Aufruf kurzzeitig absichtlich, reicht aber perfekt,
-    // um zu hören, ob Musik aus den Kopfhörern/Lautsprechern kommt!
-    auto startTime = std::chrono::steady_clock::now();
-    while (true) {
-        // Berechne die vergangene Zeit
-        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
-                std::chrono::steady_clock::now() - startTime).count();
-
-        if (elapsed >= 10) break; // Nach 10 Sekunden Test beenden
-
-        // Das reguläre Decoder-Update aufrufen
-        globalAudioDecoder->update();
-
-        // Kurz schlafen legen (entspricht etwa 60 FPS Frame-Time),
-        // damit die CPU nicht auf 100% rattert.
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
-    }
-
-    //wgpInit();
-    //float fdt = 0.0f;
-    //stateMachine = new StateMachine( DeltaClock.ReadDelta(), fdt);
+    wgpInit();
+    float fdt = 0.0f;
+    stateMachine = new StateMachine( DeltaClock.ReadDelta(), fdt);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_initStates(JNIEnv* env, jclass clazz){
-    //if(!stateMachine->isRunning())
-    //    stateMachine->addStateAtTop(recoverState(currentState));
+    if(!stateMachine->isRunning())
+        stateMachine->addStateAtTop(recoverState(currentState));
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_wgpConfigureSurface(JNIEnv* env, jclass clazz, jobject surface) {
-    //ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
-    //wgpConfigureSurface(static_cast<void*>(window));
-    //ANativeWindow_release(window);
+    ANativeWindow* window = ANativeWindow_fromSurface(env, surface);
+    wgpConfigureSurface(static_cast<void*>(window));
+    ANativeWindow_release(window);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_resize(JNIEnv* env, jclass clazz, jobject surface, jint width, jint height) {
-    //wgpResize((void*)ANativeWindow_fromSurface(env, surface), width, height);
-    //if(stateMachine->isRunning())
-    //    stateMachine->getStates().top()->resize(0, 0);
+    wgpResize((void*)ANativeWindow_fromSurface(env, surface), width, height);
+    if(stateMachine->isRunning())
+        stateMachine->getStates().top()->resize(0, 0);
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_start(JNIEnv* env, jclass clazz, jobject surface) {
-    //if (renderThread == nullptr) {
-    //    DeltaClock.SetMaxDelta(0.05f);
-    //    DeltaClock.Reset();
-    //    renderThread = new RenderThread(DeltaClock, *stateMachine);
-    //    renderThread->start();
-    //}
-    //renderThread->setWindow(ANativeWindow_fromSurface(env, surface));
+    if (renderThread == nullptr) {
+        DeltaClock.SetMaxDelta(0.05f);
+        DeltaClock.Reset();
+        renderThread = new RenderThread(DeltaClock, *stateMachine);
+        renderThread->start();
+    }
+    renderThread->setWindow(ANativeWindow_fromSurface(env, surface));
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_stop(JNIEnv *env, jclass clazz) {
-    //if (renderThread != nullptr) {
-    //    ANativeWindow* window = renderThread->getWindow();
-//
-    //    renderThread->setWindow(nullptr);
-    //    renderThread->stop();
-//
-    //   delete renderThread;
-    //   renderThread = nullptr;
-//
-    //   ANativeWindow_release(window);
-    //}
+    if (renderThread != nullptr) {
+        ANativeWindow* window = renderThread->getWindow();
+
+        renderThread->setWindow(nullptr);
+        renderThread->stop();
+
+       delete renderThread;
+       renderThread = nullptr;
+
+       ANativeWindow_release(window);
+    }
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_destroy(JNIEnv *env, jclass clazz) {
-    //wgpShutDown();
-    //delete stateMachine;
-    //stateMachine = nullptr;
+    wgpShutDown();
+    delete stateMachine;
+    stateMachine = nullptr;
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_OnButton(JNIEnv *env, jclass clazz, jint button) {

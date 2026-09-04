@@ -299,3 +299,54 @@ void nk_virtual_rotation_button(struct nk_context* ctx, float size_px, int touch
 		}
 	}
 }
+
+bool rounded_button(struct nk_rect dimension, const char* label, int touch_id, bool& isPressed) {
+	bool is_pressed = false;
+	if (nk_begin(&nkContext.context, label, dimension, NK_WINDOW_NO_INPUT | NK_WINDOW_NO_SCROLLBAR)) {
+		nk_layout_row_static(&nkContext.context, dimension.h, dimension.w, 1);
+		 nk_rounded_button_logic(&nkContext.context, label, touch_id, is_pressed);
+	}
+	nk_end(&nkContext.context);
+	return is_pressed;
+}
+
+void nk_rounded_button_logic(struct nk_context* ctx, const char* label, int touch_id, bool& isPressed){
+	struct nk_rect bounds;
+	nk_widget(&bounds, ctx);
+	isPressed = false;
+	struct nk_color btn_color = nk_rgba(60, 60, 60, 200);
+	struct nk_color text_color = nk_rgb(230, 230, 230);
+	float corner_radius = 12.0f;
+
+	if (touch_id != -1 && touchStates[touch_id].touchActive) {
+		float tx = touchStates[touch_id].touchX;
+		float ty = touchStates[touch_id].touchY;
+
+		if (tx >= bounds.x && tx <= (bounds.x + bounds.w) &&
+		    ty >= bounds.y && ty <= (bounds.y + bounds.h)) {
+
+			isPressed = true;
+			btn_color = nk_rgba(40, 40, 40, 255);
+			text_color = nk_rgb(255, 100, 100);
+		}
+	}
+
+	struct nk_command_buffer* canvas = nk_window_get_canvas(ctx);
+	if (canvas) {
+		nk_fill_rect(canvas, bounds, corner_radius, btn_color);
+		nk_stroke_rect(canvas, bounds, corner_radius, 2.0f, nk_rgb(180, 180, 180));
+
+		if (ctx->style.font) {
+			const struct nk_user_font* font = ctx->style.font;
+
+			float text_w = font->width(font->userdata, font->height, label, nk_strlen(label));
+			float text_h = font->height;
+
+			struct nk_vec2 text_pos;
+			text_pos.x = bounds.x + (bounds.w - text_w) / 2.0f;
+			text_pos.y = bounds.y + (bounds.h - text_h) / 2.0f;
+
+			nk_draw_text(canvas, nk_rect(text_pos.x, text_pos.y, text_w, text_h), label, nk_strlen(label), ctx->style.font, nk_rgba(0,0,0,0), text_color);
+		}
+	}
+}
