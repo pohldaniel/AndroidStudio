@@ -28,6 +28,7 @@
 #include <States/ComputeParticleLogo.h>
 #include <States/VolumeRendering.h>
 #include <States/AudioDecode.h>
+#include <States/VideoDecode.h>
 #include <States/BowSimulation.h>
 #include <States/Isometric.h>
 
@@ -59,6 +60,8 @@ State* recoverState(States crrntStt){
             return new VolumeRendering(*stateMachine);
         case States::AUDIO_DECODE:
             return new AudioDecode(*stateMachine);
+        case States::VIDEO_DECODE:
+            return new VideoDecode(*stateMachine);
         case States::BOW_SIMULATION:
             return new BowSimulation(*stateMachine);
         case States::ISOMETRIC:
@@ -92,6 +95,14 @@ extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_resize(J
         stateMachine->getStates().top()->resize(0, 0);
 }
 
+extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_onResize(JNIEnv* env, jclass clazz, jint width, jint height) {
+    renderThread->pause();
+    wgpResizeSilent(width, height);
+    if(stateMachine->isRunning())
+        stateMachine->getStates().top()->resize(0, 0);
+    renderThread->resume();
+}
+
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_start(JNIEnv* env, jclass clazz, jobject surface) {
     if (renderThread == nullptr) {
         DeltaClock.SetMaxDelta(0.05f);
@@ -118,6 +129,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_stop(JNI
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_destroy(JNIEnv *env, jclass clazz) {
     wgpShutDown();
+    SoundDevice::ShutDown();
     delete stateMachine;
     stateMachine = nullptr;
 }

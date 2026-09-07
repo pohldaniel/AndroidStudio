@@ -11,15 +11,15 @@ extern "C" {
 
 #include "OpenALPlayer.h"
 
-struct AVMemBuffer {
-    const uint8_t* base;
-    const uint8_t* ptr;
-    size_t size;
-    size_t total_size;
-};
+
 
 class AudioDecoder {
-
+    struct AVMemBuffer {
+        const uint8_t* base;
+        const uint8_t* ptr;
+        size_t size;
+        size_t total_size;
+    };
 public:
 
     AudioDecoder();
@@ -63,6 +63,9 @@ private:
 
     AVMemBuffer m_memBuffer;
 
-    uint8_t* m_data;
+    uint8_t* m_data = nullptr;
     uint32_t m_size;
+
+    static int Read_memory_packet(void* opaque, uint8_t* buf, int buf_size);
+    static int64_t Seek_memory_packet(void* opaque, int64_t offset, int whence);
 };

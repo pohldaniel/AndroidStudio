@@ -1,16 +1,19 @@
 package com.android.webgpu;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.Surface;
 import android.widget.Button;
 
 import android.widget.FrameLayout;
 import androidx.appcompat.widget.Toolbar;
 
 public class MainActivity extends AppCompatActivity {
-    private final String[] appStates = {"Collada", "Wireframe", "Deferred", "Particle", "Volume", "Audio Decode", "Isometric"};
+    private final String[] appStates = {"Collada", "Wireframe", "Deferred", "Particle", "Volume", "Audio Decode", "Video Decode","Isometric"};
     private static int CurrentStateIndex = 0;
     private View view;
 
@@ -82,6 +85,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         view.onDestroy();
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        view.post(new Runnable() {
+            @Override
+            public void run() {
+                NativeLibrary.onResize(view.getWidth(), view.getHeight());
+            }
+        });
     }
 }
 

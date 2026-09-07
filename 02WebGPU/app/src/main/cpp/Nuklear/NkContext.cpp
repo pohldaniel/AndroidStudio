@@ -5,7 +5,6 @@
 #include "NkContext.h"
 #include "AssetIO.h"
 
-
 NkContext nkContext = {};
 
 void nkInit(float width, float height) {

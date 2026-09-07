@@ -39,16 +39,20 @@ set_target_properties(swresample PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_S
 add_library(avutil STATIC IMPORTED)
 set_target_properties(avutil PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/SDK/jniLibs/${ANDROID_ABI}/libavutil.a")
 
+add_library(swscale STATIC IMPORTED)
+set_target_properties(swscale PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/SDK/jniLibs/${ANDROID_ABI}/libswscale.a")
+
 add_subdirectory(core)
 add_subdirectory(Shape)
 add_subdirectory(WebGPU)
 add_subdirectory(States)
 add_subdirectory(Nuklear)
 add_subdirectory(Sound)
+add_subdirectory(Video)
 
 add_library(native SHARED bullet_store.cpp Native.cpp InputTouch.cpp DeltaClock.cpp RenderThread.cpp AssetIO.cpp)
 target_include_directories(native PRIVATE bullet_store.h InputTouch.h DeltaClock.h RenderThread.h AssetIO.h)
-target_link_libraries(native core shape states webgpu nuklear sound avformat avcodec swresample avutil freeimage assimp openal oboe zlib wgpu android log)
+target_link_libraries(native core shape states webgpu nuklear sound video avformat avcodec swresample swscale avutil freeimage assimp openal oboe zlib wgpu android log)
 
 target_include_directories(webgpu PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Shape")
 target_include_directories(states PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/WebGPU")

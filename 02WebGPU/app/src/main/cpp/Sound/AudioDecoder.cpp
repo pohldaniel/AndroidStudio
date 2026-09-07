@@ -14,7 +14,7 @@ AudioDecoder::~AudioDecoder() {
     av_frame_free(&m_frame);
 }
 
-int read_memory_packet(void* opaque, uint8_t* buf, int buf_size) {
+int AudioDecoder::Read_memory_packet(void* opaque, uint8_t* buf, int buf_size) {
     AVMemBuffer* bd = static_cast<AVMemBuffer*>(opaque);
     if (!bd || bd->size == 0) return AVERROR_EOF;
 
@@ -27,7 +27,7 @@ int read_memory_packet(void* opaque, uint8_t* buf, int buf_size) {
     return read_bytes;
 }
 
-int64_t seek_memory_packet(void* opaque, int64_t offset, int whence) {
+int64_t AudioDecoder::Seek_memory_packet(void* opaque, int64_t offset, int whence) {
     AVMemBuffer* bd = static_cast<AVMemBuffer*>(opaque);
     if (!bd) return -1;
 
@@ -87,7 +87,7 @@ void AudioDecoder::open(const std::string& filename, std::unique_ptr<IAudioOutpu
 
     AVIOContext* avio_ctx = avio_alloc_context(
             avio_ctx_buffer, avio_ctx_buffer_size, 0,
-            &m_memBuffer, &read_memory_packet, nullptr, &seek_memory_packet
+            &m_memBuffer, &Read_memory_packet, nullptr, &Seek_memory_packet
     );
 
     if (!avio_ctx) {
@@ -98,10 +98,10 @@ void AudioDecoder::open(const std::string& filename, std::unique_ptr<IAudioOutpu
     m_formatContext->pb = avio_ctx;
     m_formatContext->flags |= AVFMT_FLAG_CUSTOM_IO;
 
-    if (avformat_open_input(&m_formatContext, filename.c_str(), nullptr, nullptr) < 0) return;
+    if (avformat_open_input(&m_formatContext, nullptr, nullptr, nullptr) < 0) return;
     if (avformat_find_stream_info(m_formatContext, nullptr) < 0) return;
 
-    for (unsigned int i = 0; i < m_formatContext->nb_streams; i++) {
+    for (int i = 0; i < m_formatContext->nb_streams; i++) {
         if (m_formatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             m_audioStreamIndex = i;
             break;

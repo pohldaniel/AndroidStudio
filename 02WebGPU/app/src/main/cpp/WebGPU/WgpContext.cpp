@@ -246,6 +246,32 @@ void wgpResize(void* window, uint32_t width, uint32_t height) {
     }
 }
 
+void wgpResizeSilent(uint32_t width, uint32_t height){
+    wgpWidth = width;
+    wgpHeight = height;
+    if (wgpContext.surface) {
+        wgpuTextureViewRelease(wgpContext.depthTextureView);
+        wgpuTextureDestroy(wgpContext.depthTexture);
+        wgpuTextureRelease(wgpContext.depthTexture);
+
+        wgpContext.depthTexture = wgpCreateTexture(width, height, 1u, WGPUTextureUsage_RenderAttachment, wgpContext.depthFormat, 1u, wgpContext.msaaSampleCount, wgpContext.depthFormat);
+        wgpContext.depthTextureView = wgpCreateTextureView(wgpContext.depthTexture, WGPUTextureAspect::WGPUTextureAspect_All);
+
+        if (wgpContext.msaaSampleCount > 1u) {
+            wgpuTextureViewRelease(wgpContext.msaaTextureView);
+            wgpuTextureDestroy(wgpContext.msaaTexture);
+            wgpuTextureRelease(wgpContext.msaaTexture);
+
+            wgpContext.msaaTexture = wgpCreateTexture(width, height, 1u, WGPUTextureUsage_RenderAttachment, wgpContext.colorFormat, 1u, wgpContext.msaaSampleCount, wgpContext.colorFormat);
+            wgpContext.msaaTextureView = wgpCreateTextureView(wgpContext.msaaTexture, WGPUTextureAspect::WGPUTextureAspect_All);
+        }
+
+        wgpContext.config.width = width;
+        wgpContext.config.height = height;
+        wgpuSurfaceConfigure(wgpContext.surface, &wgpContext.config);
+    }
+}
+
 WGPUTexture wgpCreateTexture(uint32_t width, uint32_t height, uint32_t depth, WGPUTextureUsage textureUsage, WGPUTextureFormat textureFormat, uint32_t mipLevelCount, uint32_t sampleCount, WGPUTextureFormat viewFormat) {
     const WGPUDevice& device = wgpContext.device;
     WGPUTextureDescriptor textureDescriptor = {};

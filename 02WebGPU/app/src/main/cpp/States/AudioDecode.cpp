@@ -4,7 +4,7 @@
 #include <Nuklear/NkStyle.h>
 
 #include <States/VolumeRendering.h>
-#include <States/Isometric.h>
+#include <States/VideoDecode.h>
 
 #include "AudioDecode.h"
 #include "InputTouch.h"
@@ -48,8 +48,15 @@ void AudioDecode::OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURen
 
 void AudioDecode::OnFillBuffer(nk_context& nkCntxt) {
     int current_touch = touchStates[0].touchActive ? 0 : -1;
-    set_transparent_window_style();
+    start_x = (static_cast<float>(wgpWidth) - btn_w) / 2.0f;
+    total_block_h = (3.0f * btn_h) + (2.0f * spacing);
+    start_y = (static_cast<float>(wgpHeight) - total_block_h) / 2.0f;
 
+    ctrl_y = static_cast<float>(wgpHeight) - ctrl_size - bottom_margin;
+    play_x = side_padding;
+    pause_x = static_cast<float>(wgpWidth) - (ctrl_size * 1.5f) - side_padding;
+
+    set_transparent_window_style();
     float y = start_y;
     if (rounded_button(nk_rect(start_x, y, btn_w, btn_h), "Ambient", current_touch, m_isPressed)) {
         if (m_currentSong != 1) {
@@ -79,13 +86,13 @@ void AudioDecode::OnFillBuffer(nk_context& nkCntxt) {
     }
 
     if (rounded_button(nk_rect(pause_x, ctrl_y, ctrl_size * 1.5f, ctrl_size), "PAUSE", current_touch, m_isPressed)) {
-       m_audioDecoder.pause();
+        m_audioDecoder.pause();
     }
-
     reset_transparent_window_style();
 }
 
 void AudioDecode::resize(int deltaW, int deltaH) {
+    nkResize(static_cast<float>(wgpWidth), static_cast<float>(wgpHeight));
     m_camera.perspective(glm::radians(25.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);
 }
@@ -100,6 +107,6 @@ void AudioDecode::OnButton(const Event::MouseButtonEvent& event) {
     }
 
     if(event.button == Event::MouseButtonEvent::BUTTON_RIGHT){
-        m_machine.addStateAtBottom(new Isometric(m_machine));
+        m_machine.addStateAtBottom(new VideoDecode(m_machine));
     }
 }
