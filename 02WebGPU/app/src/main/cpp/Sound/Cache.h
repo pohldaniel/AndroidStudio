@@ -2,7 +2,7 @@
 
 #include <deque>
 #include <iterator>
-#include <mutex>
+#include <list>
 #include <unordered_map>
 #include <utility>
 #include <algorithm>
@@ -312,7 +312,6 @@ public:
 	}
 
 	void Put(const Key& key, const Value* value) {
-		operation_guard og{ safe_op };
 		auto it = cache_items_map.find(key);
 
 		if (it == cache_items_map.end()) {
@@ -325,7 +324,7 @@ public:
 
 			cache_items_deque.push_front(std::make_pair(key, value));
 			cache_items_map[key] = cache_items_deque.begin();
-		}velse {
+		}else {
 			it->second->second = value;
 		}
 	}

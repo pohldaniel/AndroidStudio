@@ -3,21 +3,25 @@
 #include <vector>
 #include <oboe/Oboe.h>
 
+#include "IAudioOutput.h"
 #include "AudioRingBuffer.h"
 
-class OboePlayer : public oboe::AudioStreamDataCallback {
+class OboePlayer : public oboe::AudioStreamDataCallback, public IAudioOutput{
 public:
     OboePlayer();
     ~OboePlayer();
 
-    bool init();
-    void start();
-    void pause();
-    void flush();
-    
-    void enqueueData(const std::vector<uint8_t>& pcmData);
+    bool init() override;
+    void enqueueData(const std::vector<uint8_t>& pcmData) override;
+    void pause() override;
+    void resume() override;
+
+    void setVolume(float volume) override;
+    float getVolume() override;
 
 private:
+
+    void flush() override;
 
     oboe::DataCallbackResult onAudioReady(
         oboe::AudioStream *audioStream,
@@ -27,4 +31,6 @@ private:
     std::shared_ptr<oboe::AudioStream> m_stream;
     AudioRingBuffer m_ringBuffer;
     std::vector<uint8_t> m_audioAccumulator;
+
+    int32_t m_volume;
 };

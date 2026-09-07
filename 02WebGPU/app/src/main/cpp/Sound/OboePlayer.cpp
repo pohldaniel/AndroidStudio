@@ -5,6 +5,7 @@
 
 OboePlayer::OboePlayer() {
     m_ringBuffer.init(44100 * 2 * sizeof(int16_t));
+    m_volume = 32768;
 }
 
 OboePlayer::~OboePlayer() {
@@ -28,7 +29,7 @@ bool OboePlayer::init() {
     return true;
 }
 
-void OboePlayer::start() {
+void OboePlayer::resume() {
     if (m_stream) m_stream->requestStart();
 }
 
@@ -57,6 +58,7 @@ void OboePlayer::enqueueData(const std::vector<uint8_t>& pcmData) {
         m_ringBuffer.write(m_audioAccumulator.data(), toWrite);
         m_audioAccumulator.erase(m_audioAccumulator.begin(), m_audioAccumulator.begin() + toWrite);
     }
+    resume();
 }
 
 oboe::DataCallbackResult OboePlayer::onAudioReady(
@@ -73,5 +75,20 @@ oboe::DataCallbackResult OboePlayer::onAudioReady(
         std::memset(reinterpret_cast<uint8_t*>(out) + bytesRead, 0, bytesNeeded - bytesRead);
     }
 
+    int32_t currentVolume = m_volume;
+    int32_t totalSamples = numFrames * 2;
+    std::transform(out, out + totalSamples, out, [currentVolume](int16_t sample) {
+        int32_t intermediate = static_cast<int32_t>(sample) * currentVolume;
+        return static_cast<int16_t>(intermediate >> 15);
+    });
+
     return oboe::DataCallbackResult::Continue;
+}
+
+void OboePlayer::setVolume(float volume){
+    m_volume = static_cast<int32_t>(volume * 32768.0f);
+}
+
+float OboePlayer::getVolume() {
+    return static_cast<float>(m_volume) / 32768.0f;
 }

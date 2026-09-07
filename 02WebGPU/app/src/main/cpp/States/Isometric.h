@@ -10,6 +10,7 @@
 #include <States/StateMachine.h>
 #include <Nuklear/NkJoystick.h>
 #include <Shape/Shape.h>
+#include <Sound/OpenALEffect.h>
 
 #include <core/animation/AnimatedModel.h>
 #include <core/animation/AnimationController.h>
@@ -83,6 +84,7 @@ private:
     const float animTransitionTime = 0.2f;
     float deathTime = -1.0f;
     float lastFireTime = 0.0f;
+	OpenALEffect m_effectPlayer;
 
     static WGPUBindGroup CreateBindGroup(const WgpBuffer& uniformBuffer, const WgpBuffer& wigglyBuffer, const WgpTexture& texture);
 };
