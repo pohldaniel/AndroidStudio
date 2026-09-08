@@ -11,7 +11,7 @@
 #include "EffectNodes.h"
 
 struct ActiveSound {
-    const std::vector<int16_t>* pcmData = nullptr;
+    const std::vector<float>* pcmData = nullptr;
     float progress = 0.0f;
     float pitchFactor = 1.0f;
     int status = 0;
@@ -53,16 +53,13 @@ public:
     SoftwareMixer();
     ~SoftwareMixer() = default;
 
-    void mixAudio(int16_t* outputBuffer, int32_t numSamples);
+    void mixAudio(float* outputBuffer, int32_t numSamples);
     void setFilter(float cutoff);
     void setVolume(float volume);
     float getVolume() const;
     void addEffect(std::unique_ptr<AudioNode> effect);
     void addMusicEffect(std::unique_ptr<AudioNode> fx);
-
     void setEnabled(const std::string& id, bool enabled);
-    void setMusicFilter(bool enabled);
-    void triggerVinylScratch(bool active);
 
 private:
 

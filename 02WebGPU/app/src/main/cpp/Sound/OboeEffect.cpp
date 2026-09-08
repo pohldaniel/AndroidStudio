@@ -17,7 +17,7 @@ void OboeEffect::init() {
     builder.setDirection(oboe::Direction::Output)
             ->setPerformanceMode(oboe::PerformanceMode::LowLatency)
             ->setSharingMode(oboe::SharingMode::Exclusive)
-            ->setFormat(oboe::AudioFormat::I16)
+            ->setFormat(oboe::AudioFormat::Float)
             ->setChannelCount(oboe::ChannelCount::Stereo)
             ->setSampleRate(44100)
             ->setDataCallback(this);
@@ -33,9 +33,10 @@ void OboeEffect::play(const std::string& file) {
     bool channelFound = false;
     for (auto& channel : m_softwareMixer.m_channels) {
         int expected = 0;
-        if (channel.status = 1) {
+        if (channel.status == 0) {
             channel.pcmData = &entry.m_samples;
             channel.progress = 0;
+            channel.status = 1;
             channel.pitchFactor = 1.0f;
             channelFound = true;
             break;
@@ -68,15 +69,8 @@ oboe::DataCallbackResult OboeEffect::onAudioReady(
         int32_t numFrames) {
 
     size_t samplesNeeded = numFrames * 2;
-    size_t bytesNeeded = samplesNeeded * sizeof(int16_t);
-    int16_t* out = static_cast<int16_t*>(audioData);
-
-    size_t bytesRead = m_ringBuffer.read(reinterpret_cast<uint8_t*>(out), bytesNeeded);
-
-    if (bytesRead < bytesNeeded) {
-        std::memset(reinterpret_cast<uint8_t*>(out) + bytesRead, 0, bytesNeeded - bytesRead);
-    }
-
+    float* out = static_cast<float*>(audioData);
+    std::fill_n(out, samplesNeeded, 0.0f);
     m_softwareMixer.mixAudio(out, static_cast<int32_t>(samplesNeeded));
 
     return oboe::DataCallbackResult::Continue;
@@ -186,13 +180,14 @@ OboeEffect::CacheEntry::CacheEntry(const std::string& file) {
     av_channel_layout_default(&outLayout, 2);
     av_opt_set_chlayout(swr, "out_chlayout", &outLayout, 0);
     av_opt_set_int(swr, "out_sample_rate", 44100, 0);
-    av_opt_set_sample_fmt(swr, "out_sample_fmt", AV_SAMPLE_FMT_S16, 0);
+    av_opt_set_sample_fmt(swr, "out_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
     swr_init(swr);
 
     AVPacket* packet = av_packet_alloc();
     AVFrame* frame = av_frame_alloc();
-    std::vector<uint8_t> pcmData;
 
+
+    std::vector<float> pcmData;
     while (av_read_frame(formatCtx, packet) >= 0) {
         if (packet->stream_index == streamIdx) {
             int send_ret = avcodec_send_packet(codecCtx, packet);
@@ -201,9 +196,7 @@ OboeEffect::CacheEntry::CacheEntry(const std::string& file) {
                 while (true) {
                     ret = avcodec_receive_frame(codecCtx, frame);
 
-                    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-                        break;
-                    }else if (ret < 0) {
+                    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF || ret < 0) {
                         break;
                     }
 
@@ -213,16 +206,17 @@ OboeEffect::CacheEntry::CacheEntry(const std::string& file) {
                         continue;
                     }
 
-                    int maxFrameSize = outSamples * 2 * sizeof(int16_t);
+                    int maxSamplesNeeded = outSamples * 2;
                     size_t oldSize = pcmData.size();
-                    pcmData.resize(oldSize + maxFrameSize);
-                    uint8_t* buffer = pcmData.data() + oldSize;
+                    pcmData.resize(oldSize + maxSamplesNeeded);
+                    uint8_t* buffer = reinterpret_cast<uint8_t*>(pcmData.data() + oldSize);
 
                     int convertedSamples = swr_convert(swr, &buffer, outSamples, (const uint8_t**)frame->data, frame->nb_samples);
                     if (convertedSamples >= 0) {
-                        int actualFrameSize = convertedSamples * 2 * sizeof(int16_t);
-                        pcmData.resize(oldSize + actualFrameSize);
-                    }else {
+                        int actualSamplesConverted = convertedSamples * 2;
+                        pcmData.resize(oldSize + actualSamplesConverted);
+                    }
+                    else {
                         pcmData.resize(oldSize);
                     }
                     av_frame_unref(frame);
@@ -238,8 +232,7 @@ OboeEffect::CacheEntry::CacheEntry(const std::string& file) {
     avcodec_free_context(&codecCtx);
     avformat_close_input(&formatCtx);
 
-    m_samples.resize(pcmData.size() / sizeof(int16_t));
-    std::memcpy(m_samples.data(), pcmData.data(), pcmData.size());
+    m_samples = std::move(pcmData);
     m_totalSamples = m_samples.size();
 
     AssetIO::Free(m_data);

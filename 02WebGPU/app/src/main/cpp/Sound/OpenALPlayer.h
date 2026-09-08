@@ -1,8 +1,8 @@
 #pragma once
 #include <algorithm>
-#include <AL/al.h>
+
 #include <AL/alc.h>
-#include <iostream>
+#include <AL/alext.h>
 
 #include "IAudioOutput.h"
 
@@ -16,7 +16,7 @@ public:
     ~OpenALPlayer() override;
 
     bool init() override;
-    void enqueueData(const std::vector<uint8_t>& pcmData) override;
+    void enqueueData(const std::vector<float>& pcmData) override;
     void pause() override;
     void resume() override;
 
@@ -29,7 +29,5 @@ private:
 
     ALuint m_source = 0u;
     ALuint m_buffers[2] = { 0u, 0u };
-
-    bool m_isPlaying = false;
-    std::vector<uint8_t> m_audioAccumulator;
+    std::vector<float> m_audioAccumulator;
 };

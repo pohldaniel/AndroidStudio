@@ -10,6 +10,7 @@ extern "C" {
 }
 
 #include <AL/al.h>
+#include <AL/alext.h>
 
 #include "ISoundEffect.h"
 #include "Cache.h"

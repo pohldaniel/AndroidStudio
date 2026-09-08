@@ -64,7 +64,7 @@ private:
     void open(const std::string& filename, std::unique_ptr<IVideoDecoder> videoDecoder = nullptr, std::unique_ptr<IAudioOutput> audioOutput = nullptr);
 
     bool decodeVideoFrame();
-    bool decodeAudioFrame(std::vector<uint8_t>& outPcmData);
+    bool decodeAudioFrame(std::vector<float>& outPcmData);
    
     AVBufferRef* m_hwDeviceContext = nullptr;
     AVPacket* m_packet = nullptr;

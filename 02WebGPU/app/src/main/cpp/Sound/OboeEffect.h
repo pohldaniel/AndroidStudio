@@ -33,7 +33,7 @@ class OboeEffect : public oboe::AudioStreamDataCallback, public ISoundEffect {
         CacheEntry(CacheEntry&& other) noexcept;
         CacheEntry& operator=(CacheEntry&& other) noexcept;
 
-        std::vector<int16_t> m_samples;
+        std::vector<float> m_samples;
         uint32_t m_totalSamples;
 
         AVMemBuffer m_memBuffer;
@@ -61,9 +61,6 @@ private:
             int32_t numFrames) override;
 
     std::shared_ptr<oboe::AudioStream> m_stream;
-    AudioRingBuffer m_ringBuffer;
-    std::vector<uint8_t> m_accumulator;
-
     SoftwareMixer m_softwareMixer;
 
     static CacheLRU<std::string, OboeEffect::CacheEntry> Cache;

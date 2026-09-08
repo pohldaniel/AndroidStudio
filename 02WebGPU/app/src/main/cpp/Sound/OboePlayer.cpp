@@ -19,7 +19,7 @@ bool OboePlayer::init() {
     builder.setDirection(oboe::Direction::Output)
            ->setPerformanceMode(oboe::PerformanceMode::LowLatency)
            ->setSharingMode(oboe::SharingMode::Exclusive)
-           ->setFormat(oboe::AudioFormat::I16)
+           ->setFormat(oboe::AudioFormat::Float)
            ->setChannelCount(oboe::ChannelCount::Stereo)
            ->setSampleRate(44100)
            ->setDataCallback(this);
@@ -44,12 +44,14 @@ void OboePlayer::flush() {
     m_ringBuffer.clear();
 }
 
-void OboePlayer::enqueueData(const std::vector<uint8_t>& pcmData) {
+void OboePlayer::enqueueData(const std::vector<float>& pcmData) {
     if (!pcmData.empty()) {
         m_accumulator.insert(m_accumulator.end(), pcmData.begin(), pcmData.end());
     }
 
-    if (m_accumulator.size() < 4096) return;
+    if (m_accumulator.size() < 4096) {
+        return;
+    }
 
     size_t availableWrite = m_ringBuffer.getAvailableWrite();
     if (availableWrite > 0 && !m_accumulator.empty()) {
@@ -66,13 +68,10 @@ oboe::DataCallbackResult OboePlayer::onAudioReady(
     int32_t numFrames) {
 
     size_t samplesNeeded = numFrames * 2;
-    size_t bytesNeeded = samplesNeeded * sizeof(int16_t);
-    int16_t* out = static_cast<int16_t*>(audioData);
-
-    size_t bytesRead = m_ringBuffer.read(reinterpret_cast<uint8_t*>(out), bytesNeeded);
-
-    if (bytesRead < bytesNeeded) {
-        std::memset(reinterpret_cast<uint8_t*>(out) + bytesRead, 0, bytesNeeded - bytesRead);
+    float* out = static_cast<float*>(audioData);
+    size_t samplesRead = m_ringBuffer.read(out, samplesNeeded);
+    if (samplesRead < samplesNeeded) {
+        std::fill_n(out + samplesRead, samplesNeeded - samplesRead, 0.0f);
     }
 
     m_softwareMixer.mixAudio(out, static_cast<int32_t>(samplesNeeded));

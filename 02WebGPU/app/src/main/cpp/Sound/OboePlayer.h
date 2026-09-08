@@ -13,7 +13,7 @@ public:
     ~OboePlayer();
 
     bool init() override;
-    void enqueueData(const std::vector<uint8_t>& pcmData) override;
+    void enqueueData(const std::vector<float>& pcmData) override;
     void pause() override;
     void resume() override;
 
@@ -31,7 +31,7 @@ private:
 
     std::shared_ptr<oboe::AudioStream> m_stream;
     AudioRingBuffer m_ringBuffer;
-    std::vector<uint8_t> m_accumulator;
+    std::vector<float> m_accumulator;
 
     SoftwareMixer m_softwareMixer;
 };
