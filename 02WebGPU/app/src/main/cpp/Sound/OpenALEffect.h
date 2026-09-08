@@ -49,6 +49,7 @@ public:
 
     void init() override;
     void play(const std::string& file) override;
+    void setVolume(float volume);
 
 private:
 

@@ -1,6 +1,8 @@
 #include "OboeEffect.h"
 #include "AssetIO.h"
 
+CacheLRU<std::string, OboeEffect::CacheEntry> OboeEffect::Cache;
+
 OboeEffect::OboeEffect(){
 
 }
@@ -10,11 +12,78 @@ OboeEffect::~OboeEffect(){
 }
 
 void OboeEffect::init() {
+    oboe::AudioStreamBuilder builder;
 
+    builder.setDirection(oboe::Direction::Output)
+            ->setPerformanceMode(oboe::PerformanceMode::LowLatency)
+            ->setSharingMode(oboe::SharingMode::Exclusive)
+            ->setFormat(oboe::AudioFormat::I16)
+            ->setChannelCount(oboe::ChannelCount::Stereo)
+            ->setSampleRate(44100)
+            ->setDataCallback(this);
+
+    oboe::Result result = builder.openStream(m_stream);
 }
 
 void OboeEffect::play(const std::string& file) {
+    const CacheEntry& entry = Cache.Get(file);
+    if (entry.m_samples.empty())
+        return;
 
+    bool channelFound = false;
+    for (auto& channel : m_softwareMixer.m_channels) {
+        int expected = 0;
+        if (channel.status = 1) {
+            channel.pcmData = &entry.m_samples;
+            channel.progress = 0;
+            channel.pitchFactor = 1.0f;
+            channelFound = true;
+            break;
+        }
+    }
+
+    if (!channelFound) {
+        size_t maxProgress = 0;
+        ActiveSound* oldestChannel = nullptr;
+        for (auto& channel : m_softwareMixer.m_channels) {
+            if (channel.progress > maxProgress) {
+                maxProgress = channel.progress;
+                oldestChannel = &channel;
+            }
+        }
+
+        if (oldestChannel) {
+            oldestChannel->pcmData = &entry.m_samples;
+            oldestChannel->progress = 0;
+            oldestChannel->status = 1;
+        }
+    }
+
+    resume();
+}
+
+oboe::DataCallbackResult OboeEffect::onAudioReady(
+        oboe::AudioStream *audioStream,
+        void *audioData,
+        int32_t numFrames) {
+
+    size_t samplesNeeded = numFrames * 2;
+    size_t bytesNeeded = samplesNeeded * sizeof(int16_t);
+    int16_t* out = static_cast<int16_t*>(audioData);
+
+    size_t bytesRead = m_ringBuffer.read(reinterpret_cast<uint8_t*>(out), bytesNeeded);
+
+    if (bytesRead < bytesNeeded) {
+        std::memset(reinterpret_cast<uint8_t*>(out) + bytesRead, 0, bytesNeeded - bytesRead);
+    }
+
+    m_softwareMixer.mixAudio(out, static_cast<int32_t>(samplesNeeded));
+
+    return oboe::DataCallbackResult::Continue;
+}
+
+void OboeEffect::resume() {
+    if (m_stream) m_stream->requestStart();
 }
 
 int OboeEffect::CacheEntry::Read_memory_packet(void* opaque, uint8_t* buf, int buf_size) {
@@ -169,8 +238,9 @@ OboeEffect::CacheEntry::CacheEntry(const std::string& file) {
     avcodec_free_context(&codecCtx);
     avformat_close_input(&formatCtx);
 
-    //alGenBuffers(1, &buffer);
-    //alBufferData(buffer, AL_FORMAT_STEREO16, pcmData.data(), static_cast<ALsizei>(pcmData.size()), 44100);
+    m_samples.resize(pcmData.size() / sizeof(int16_t));
+    std::memcpy(m_samples.data(), pcmData.data(), pcmData.size());
+    m_totalSamples = m_samples.size();
 
     AssetIO::Free(m_data);
 }
@@ -179,10 +249,15 @@ OboeEffect::CacheEntry::~CacheEntry() {
 
 }
 
-OboeEffect::CacheEntry::CacheEntry(OboeEffect::CacheEntry&& other) noexcept {
-
+OboeEffect::CacheEntry::CacheEntry(CacheEntry&& other) noexcept : m_samples(std::move(other.m_samples)), m_totalSamples(other.m_totalSamples){
+    other.m_totalSamples = 0u;
 }
 
 OboeEffect::CacheEntry& OboeEffect::CacheEntry::operator=(CacheEntry&& other) noexcept {
+    if (this != &other) {
+        m_samples = std::move(other.m_samples);
+        m_totalSamples = other.m_totalSamples;
+        other.m_totalSamples = 0u;
+    }
     return *this;
 }

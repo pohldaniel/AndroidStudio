@@ -64,6 +64,17 @@ int64_t VideoDecoder::Seek_memory_packet(void* opaque, int64_t offset, int whenc
     return new_offset;
 }
 
+void VideoDecoder::init(std::unique_ptr<IVideoDecoder> videoDecoder, std::unique_ptr<IAudioOutput> audioOutput){
+    if (videoDecoder) {
+        m_decoder = std::move(videoDecoder);
+    }
+
+    if (audioOutput) {
+        m_audioOutput = std::move(audioOutput);
+        m_audioOutput->init();
+    }
+}
+
 void VideoDecoder::open(const std::string& filename, std::unique_ptr<IVideoDecoder> videoDecoder, std::unique_ptr<IAudioOutput> audioOutput) {
     AssetIO::LoadAsset(filename.c_str(), m_data, m_size);
 
@@ -153,17 +164,6 @@ void VideoDecoder::open(const std::string& filename, std::unique_ptr<IVideoDecod
     m_videoTimebase = av_q2d(videoStream->time_base);
     m_isPaused = false;
     m_currentTime = 0.0f;
-}
-
-void VideoDecoder::init(std::unique_ptr<IVideoDecoder> videoDecoder, std::unique_ptr<IAudioOutput> audioOutput){
-    if (videoDecoder) {
-        m_decoder = std::move(videoDecoder);
-    }
-
-    if (audioOutput) {
-        m_audioOutput = std::move(audioOutput);
-        m_audioOutput->init();
-    }
 }
 
 void VideoDecoder::queryFirstFrame() {

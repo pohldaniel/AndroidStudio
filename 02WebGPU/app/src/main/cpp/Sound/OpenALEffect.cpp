@@ -36,6 +36,12 @@ void OpenALEffect::play(const std::string& file) {
     m_next = (m_next + 1) % m_sources.size();
 }
 
+void OpenALEffect::setVolume(float volume) {
+    for (ALuint source : m_sources) {
+        alSourcef(source, AL_GAIN, std::clamp(volume, 0.0f, 1.0f));
+    }
+}
+
 int OpenALEffect::CacheEntry::Read_memory_packet(void* opaque, uint8_t* buf, int buf_size) {
     AVMemBuffer* bd = static_cast<AVMemBuffer*>(opaque);
     if (!bd || bd->size == 0) return AVERROR_EOF;

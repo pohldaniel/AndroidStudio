@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <oboe/Oboe.h>
+
 extern "C" {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
@@ -7,10 +10,12 @@ extern "C" {
 #include <libavutil/opt.h>
 }
 
+#include "AudioRingBuffer.h"
+#include "SoftwareMixer.h"
 #include "ISoundEffect.h"
 #include "Cache.h"
 
-class OboeEffect: public ISoundEffect {
+class OboeEffect : public oboe::AudioStreamDataCallback, public ISoundEffect {
     struct AVMemBuffer {
         const uint8_t* base;
         const uint8_t* ptr;
@@ -28,6 +33,9 @@ class OboeEffect: public ISoundEffect {
         CacheEntry(CacheEntry&& other) noexcept;
         CacheEntry& operator=(CacheEntry&& other) noexcept;
 
+        std::vector<int16_t> m_samples;
+        uint32_t m_totalSamples;
+
         AVMemBuffer m_memBuffer;
         uint8_t* m_data = nullptr;
         uint32_t m_size;
@@ -43,7 +51,20 @@ public:
 
     void init() override;
     void play(const std::string& file) override;
+    void resume();
 
 private:
+
+    oboe::DataCallbackResult onAudioReady(
+            oboe::AudioStream *audioStream,
+            void *audioData,
+            int32_t numFrames) override;
+
+    std::shared_ptr<oboe::AudioStream> m_stream;
+    AudioRingBuffer m_ringBuffer;
+    std::vector<uint8_t> m_accumulator;
+
+    SoftwareMixer m_softwareMixer;
+
     static CacheLRU<std::string, OboeEffect::CacheEntry> Cache;
 };

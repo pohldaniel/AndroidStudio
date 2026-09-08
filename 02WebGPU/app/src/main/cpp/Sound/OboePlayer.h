@@ -5,6 +5,7 @@
 
 #include "IAudioOutput.h"
 #include "AudioRingBuffer.h"
+#include "SoftwareMixer.h"
 
 class OboePlayer : public oboe::AudioStreamDataCallback, public IAudioOutput{
 public:
@@ -30,7 +31,7 @@ private:
 
     std::shared_ptr<oboe::AudioStream> m_stream;
     AudioRingBuffer m_ringBuffer;
-    std::vector<uint8_t> m_audioAccumulator;
+    std::vector<uint8_t> m_accumulator;
 
-    int32_t m_volume;
+    SoftwareMixer m_softwareMixer;
 };

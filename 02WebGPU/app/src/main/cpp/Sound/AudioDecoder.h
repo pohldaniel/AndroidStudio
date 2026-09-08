@@ -35,7 +35,7 @@ public:
         auto audio = std::make_unique<AudioImpl>();
         open(filename, std::move(audio));
     }
-    void switchTrack(const std::string& filename);
+    void playTrack(const std::string& filename);
     void close();
     void update();
 

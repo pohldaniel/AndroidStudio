@@ -60,7 +60,7 @@ void AudioDecode::OnFillBuffer(nk_context& nkCntxt) {
     float y = start_y;
     if (rounded_button(nk_rect(start_x, y, btn_w, btn_h), "Ambient", current_touch, m_isPressed)) {
         if (m_currentSong != 1) {
-            m_audioDecoder.switchTrack("sounds/ambient.mp3");
+            m_audioDecoder.playTrack("sounds/ambient.mp3");
             m_currentSong = 1;
         }
     }
@@ -68,7 +68,7 @@ void AudioDecode::OnFillBuffer(nk_context& nkCntxt) {
     y = start_y + btn_h + spacing;
     if (rounded_button(nk_rect(start_x, y, btn_w, btn_h), "Paradise Found", current_touch, m_isPressed)) {
         if (m_currentSong != 2) {
-            m_audioDecoder.switchTrack("sounds/paradise_found.mp3");
+            m_audioDecoder.playTrack("sounds/paradise_found.mp3");
             m_currentSong = 2;
         }
     }
@@ -76,7 +76,7 @@ void AudioDecode::OnFillBuffer(nk_context& nkCntxt) {
     y = start_y + (btn_h + spacing) * 2.0f;
     if (rounded_button(nk_rect(start_x, y, btn_w, btn_h), "Screen Saver", current_touch, m_isPressed)) {
         if (m_currentSong != 3) {
-            m_audioDecoder.switchTrack("sounds/screen_saver.mp3");
+            m_audioDecoder.playTrack("sounds/screen_saver.mp3");
             m_currentSong = 3;
         }
     }

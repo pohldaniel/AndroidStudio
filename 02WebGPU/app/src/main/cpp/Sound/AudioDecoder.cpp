@@ -125,13 +125,14 @@ void AudioDecoder::open(const std::string& filename, std::unique_ptr<IAudioOutpu
     av_opt_set_int(m_swrContext, "out_sample_rate", 44100, 0);
     av_opt_set_sample_fmt(m_swrContext, "out_sample_fmt", AV_SAMPLE_FMT_S16, 0);
     swr_init(m_swrContext);
+
     init(std::move(audioOutput));
     queryFirstFrame();
 
     m_isPaused = false;
 }
 
-void AudioDecoder::switchTrack(const std::string& filename) {
+void AudioDecoder::playTrack(const std::string& filename) {
     close();
     if(m_audioOutput)
         m_audioOutput->flush();
