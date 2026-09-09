@@ -150,8 +150,9 @@ Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC),
     m_wgpEnemy.create(m_enemy);
     m_wgpEnemy.addBindGroup("BG", CreateBindGroup(m_instanceBuffer, m_wigglyBuffer, m_wgpEnemyD));
 
-    m_soundEffect.init<OpenALEffect>();
-    m_soundEffect.getAudioOutput<OpenALEffect>()->setVolume(0.25f);
+    m_fire.init<OboeEffect>();
+    m_ding.init<OboeEffect>();
+    m_ding.get<OboeEffect>()->getMixer().setVolume(0.5f);
 
     wgpContext.setClearColor({ 0.2f, 0.2f, 0.2f, 1.0f });
     wgpContext.OnDraw = std::bind(&Isometric::OnDraw, this, std::placeholders::_1, std::placeholders::_2);
@@ -177,7 +178,7 @@ void Isometric::update() {
 
         m_bulletStore.createBullets(projectileSpawnPoint, midOri, 10);
         lastFireTime = Clock();
-        m_soundEffect.play("sounds/ar_fired.wav");
+        m_fire.play("sounds/shooting_one.wav");
     }
 
     m_trackball.idle();

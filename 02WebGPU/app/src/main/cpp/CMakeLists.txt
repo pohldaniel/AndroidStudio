@@ -6,6 +6,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/SDK/include")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/SDK/include/ffmpeg")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/SDK/include/DaisySP")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/core")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -42,6 +43,9 @@ set_target_properties(avutil PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURC
 add_library(swscale STATIC IMPORTED)
 set_target_properties(swscale PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/SDK/jniLibs/${ANDROID_ABI}/libswscale.a")
 
+add_library(daisysp STATIC IMPORTED)
+set_target_properties(daisysp PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/SDK/jniLibs/${ANDROID_ABI}/libdaisysp.a")
+
 add_subdirectory(core)
 add_subdirectory(Shape)
 add_subdirectory(WebGPU)
@@ -52,7 +56,7 @@ add_subdirectory(Video)
 
 add_library(native SHARED bullet_store.cpp Native.cpp InputTouch.cpp DeltaClock.cpp RenderThread.cpp AssetIO.cpp)
 target_include_directories(native PRIVATE bullet_store.h InputTouch.h DeltaClock.h RenderThread.h AssetIO.h)
-target_link_libraries(native core shape states webgpu nuklear sound video avformat avcodec swresample swscale avutil freeimage assimp openal oboe zlib wgpu android log)
+target_link_libraries(native core shape states webgpu nuklear sound video avformat avcodec swresample swscale avutil freeimage assimp openal oboe daisysp zlib wgpu android log)
 
 target_include_directories(webgpu PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Shape")
 target_include_directories(states PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/WebGPU")

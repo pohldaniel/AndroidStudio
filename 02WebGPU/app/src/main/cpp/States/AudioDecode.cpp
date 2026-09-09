@@ -23,7 +23,7 @@ AudioDecode::AudioDecode(StateMachine& machine) : State(machine, States::AUDIO_D
     nkContext.OnFillBuffer = std::bind(&AudioDecode::OnFillBuffer, this, std::placeholders::_1);
 
     m_audioDecoder.init<OpenALPlayer>();
-    m_audioDecoder.getAudioOutput<OpenALPlayer>()->setVolume(0.25f);
+    m_audioDecoder.get<OpenALPlayer>()->setVolume(0.25f);
 }
 
 AudioDecode::~AudioDecode() {

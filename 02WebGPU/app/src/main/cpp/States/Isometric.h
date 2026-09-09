@@ -87,7 +87,7 @@ private:
     float deathTime = -1.0f;
     float lastFireTime = 0.0f;
 
-	SoundEffect m_soundEffect;
+	SoundEffect m_fire, m_ding;
 
     static WGPUBindGroup CreateBindGroup(const WgpBuffer& uniformBuffer, const WgpBuffer& wigglyBuffer, const WgpTexture& texture);
 };

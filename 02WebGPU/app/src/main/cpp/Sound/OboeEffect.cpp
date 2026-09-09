@@ -80,6 +80,10 @@ void OboeEffect::resume() {
     if (m_stream) m_stream->requestStart();
 }
 
+SoftwareMixer& OboeEffect::getMixer() {
+    return m_softwareMixer;
+}
+
 int OboeEffect::CacheEntry::Read_memory_packet(void* opaque, uint8_t* buf, int buf_size) {
     AVMemBuffer* bd = static_cast<AVMemBuffer*>(opaque);
     if (!bd || bd->size == 0) return AVERROR_EOF;

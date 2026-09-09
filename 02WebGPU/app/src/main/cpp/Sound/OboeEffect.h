@@ -53,6 +53,8 @@ public:
     void play(const std::string& file) override;
     void resume();
 
+    SoftwareMixer& getMixer();
+
 private:
 
     oboe::DataCallbackResult onAudioReady(
