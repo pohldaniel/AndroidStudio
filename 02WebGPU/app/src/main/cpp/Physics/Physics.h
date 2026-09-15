@@ -1,0 +1,147 @@
+#pragma once
+
+#include <vector>
+#include <array>
+#include <unordered_map>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+
+#include <btBulletDynamicsCommon.h>
+#include <BulletCollision/CollisionShapes/btBox2dShape.h>
+#include <BulletCollision/CollisionShapes/btCollisionShape.h>
+#include <BulletCollision/CollisionShapes/btShapeHull.h>
+#include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
+#include <BulletCollision/CollisionDispatch/btGhostObject.h>
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
+#include <BulletDynamics/Character/btKinematicCharacterController.h>
+
+#include "DebugDrawer.h"
+
+#define MAX_SIMULATION_SUBSTEPS   0
+
+class Shape;
+class Mesh;
+class Model;
+
+struct PhysicsRaycastResult {
+	PhysicsRaycastResult() : body(nullptr) {
+	}
+
+	bool operator !=(const PhysicsRaycastResult& rhs) const {
+		return position != rhs.position || normal != rhs.normal || distance != rhs.distance || body != rhs.body;
+	}
+
+	std::array<float, 3> position;
+	std::array<float, 3> normal;
+	float distance;
+	float hitFraction;
+	btRigidBody* body;
+};
+
+
+class Physics{
+
+public:
+
+	enum collisiontypes {
+		FLOOR = 1,
+		RENDERABLE_OBJECT = 2,
+		RAY = 4,
+		PICKABLE_OBJECT = 8,
+		CAMERA = 16,
+		CHARACTER = 32,
+		TRIGGER = 64,
+		CAR = 128,
+		MOUSEPICKER = 256,
+		SPHERE = 512,
+		DUMMY = 1024,
+		SWORD = 2048,
+		TRIGGER_1 = 4096,
+		TRIGGER_2 = 8192,
+		ENEMY = 16384,
+		CUBE = 32768,
+		COL_FORCE_8BIT = 0xFFFF
+	};
+	
+
+	Physics();
+	~Physics(void);
+
+	void OnPhysicsTick(float fixedDeltaTime);
+	void initialize();
+	void deinitialize();
+
+	void preStep(btScalar timeStep);
+	void stepSimulation(btScalar timeStep);
+	void postStep(btScalar timeStep);
+	btBroadphaseInterface* getBroadphase();
+	void HandleCollisions();
+
+	btRigidBody* addStaticModel(std::vector<btCollisionShape*>& collisionShapes, const btTransform& trans, bool debugDraw = true, const btVector3& scale = btVector3(1.0f, 1.0f, 1.0f), int collisionFilterGroup = 1, int collisionFilterMask = -1);
+	
+	static btCollisionShape* CreateCollisionShape(const Shape* shape, const btVector3& scale = btVector3(1.0f, 1.0f, 1.0f));
+	static btCollisionShape* CreateCollisionShape(const std::vector<float>& floatArray, const btVector3& scale = btVector3(1.0f, 1.0f, 1.0f));
+	static btCollisionShape* CreateConvexHullShape(const Shape* shape, const btVector3& scale = btVector3(1.0f, 1.0f, 1.0f));
+	static btCollisionShape* CreateConvexHullShape(const std::vector<std::array<float, 3>>& positions, const btVector3& scale = btVector3(1.0f, 1.0f, 1.0f));
+	static std::vector<btCollisionShape*> CreateCollisionShapes(Shape* shape, float scale = 1.0f);
+
+	static btCollisionShape* CreateCollisionShape(Mesh* mesh, const btVector3& scale = btVector3(1.0f, 1.0f, 1.0f));
+	static btCollisionShape* CreateCollisionShape(Mesh* mesh, float scale = 1.0f);
+	static std::vector<btCollisionShape*> CreateCollisionShapes(Model* model, const btVector3& scale = btVector3(1.0f, 1.0f, 1.0f));
+	static std::vector<btCollisionShape*> CreateCollisionShapes(Model* model, float scale = 1.0f);	
+
+	static btRigidBody* CreateRigidBody(btScalar mass, const btTransform & transform, btCollisionShape* shape, int collisionFlag = btCollisionObject::CF_DYNAMIC_OBJECT, void* userPointer = nullptr);
+	static btRigidBody* AddRigidBody(float mass, const btTransform & transform, btCollisionShape* shape, int collisionFilterGroup = 1, int collisionFilterMask = -1, unsigned int collisionFlag = btCollisionObject::CF_DYNAMIC_OBJECT, void* userPointer = nullptr);
+	
+	static btRigidBody* AddKinematicRigidBody(const btTransform& transform, btCollisionShape* shape, int collisionFilterGroup = 1, int collisionFilterMask = -1, void* userPointer = nullptr, bool useMotionState = true);
+	static btRigidBody* AddStaticRigidBody(const btTransform& transform, btCollisionShape* shape, int collisionFilterGroup = 1, int collisionFilterMask = -1, void* userPointer = nullptr);
+
+	static btCollisionObject* AddKinematicObject(const btTransform& transform, btCollisionShape* shape, int collisionFilterGroup = 1, int collisionFilterMask = -1, void* userPointer = nullptr);
+	static btCollisionObject* AddKinematicTrigger(const btTransform& transform, btCollisionShape* shape, int collisionFilterGroup = 1, int collisionFilterMask = -1, void* userPointer = nullptr);
+	static btCollisionObject* AddStaticObject(const btTransform& transform, btCollisionShape* shape, int collisionFilterGroup = 1, int collisionFilterMask = -1, void* userPointer = nullptr);
+	static btCollisionObject* AddStaticTrigger(const btTransform& transform, btCollisionShape* shape, int collisionFilterGroup = 1, int collisionFilterMask = -1, void* userPointer = nullptr);
+
+	static float SweepSphere(const btVector3& from, const btVector3& to, float radius, int collisionFilterGroup = 1, int collisionFilterMask = -1);
+	static float RayTest(const btVector3& from, const btVector3& to, int collisionFilterGroup = 1, int collisionFilterMask = -1);
+	static void RaycastSingleSegmented(PhysicsRaycastResult& result, const std::array<float, 3>& origin, const std::array<float, 3>& direction, float maxDistance, float segmentDistance, int collisionFilterGroup = 1, int collisionFilterMask = -1);
+
+	static btTransform BtTransform();
+	static btTransform BtTransform(const btVector3& origin);
+	static btTransform BtTransform(const btVector3& origin, const btQuaternion& orientation);
+	static btTransform BtTransform(const btQuaternion& orientation, const btVector3& origin);
+
+	static btTransform BtTransform(const glm::vec3& origin);
+	static btTransform BtTransform(const glm::vec3& axis, float degrees);
+	static btTransform BtTransform(const glm::vec3& origin, const glm::vec3& axis, float degrees);
+	static btTransform BtTransform(const glm::vec3& origin, const glm::quat& rotation);
+	static btVector3 VectorFrom(const glm::vec3& vector);
+	static btQuaternion QuaternionFrom(const glm::quat& quaternion);
+
+	static glm::mat4 MatrixFrom(const btTransform& trans, const btVector3& scale = btVector3(1.0f, 1.0f, 1.0f));
+	static glm::mat4 MatrixTransposeFrom(const btTransform& trans, const btVector3& scale = btVector3(1.0f, 1.0f, 1.0f));
+	static glm::vec3 VectorFrom(const btVector3& vector);
+	static glm::quat QuaternionFrom(const btQuaternion& quaternion);
+
+	static btDiscreteDynamicsWorld* GetDynamicsWorld();
+
+	static btCollisionShape* CreateStaticCollisionShape(std::vector<float>& vertexBuffer, std::vector<unsigned int>& indexBuffer, const btVector3& scale = btVector3(1.0f, 1.0f, 1.0f));
+	static std::vector<btCollisionShape*> CreateStaticCollisionShapes(std::vector<float>& vertexBuffer, std::vector<unsigned int>& indexBuffer, float scale = 1.0f);
+	static std::vector<btCollisionShape*> CreateStaticCollisionShapes(std::vector<float>& vertexBuffer, std::vector<unsigned int>& indexBuffer, const btVector3& scale = btVector3(1.0f, 1.0f, 1.0f));
+
+	static void PreTickCallback(btDynamicsWorld* world, btScalar timeStep);
+	static void PostTickCallback(btDynamicsWorld* world, btScalar timeStep);
+	static void TickCallback(btDynamicsWorld* world, btScalar timeStep);
+	static void DebugDrawWorld();
+	static void SetDebugMode(unsigned int mode);
+	static void DeleteAllCollisionObjects();
+	static void DeleteCollisionObject(btCollisionObject* obj);
+
+	btCollisionDispatcher* m_dispatcher;
+	btBroadphaseInterface* m_broadphase;
+	btSequentialImpulseConstraintSolver* m_constraintSolver;
+	btDefaultCollisionConfiguration* m_collisionConfiguration;
+
+	static btDiscreteDynamicsWorld* DynamicsWorld;
+	static DebugDrawer DebugDrawer;
+};

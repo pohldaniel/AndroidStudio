@@ -25,8 +25,11 @@ public:
 
 	virtual ~Model() = default;
 	virtual unsigned int getStride() const = 0;
+	const std::vector<Mesh*>& getMeshes() const;
 
 protected:
+
+	std::vector<Mesh*> m_meshes;
 
 	void static GenerateColors(std::vector<float>& vertexBuffer, std::vector<unsigned int>& indexBuffer, unsigned int& stride, ModelColor modelColor);
 	void static GenerateUVs(std::vector<float>& vertexBuffer, unsigned int& stride, ProjectedPlane projectedPlane = XY);
@@ -40,8 +43,6 @@ protected:
 	void static GenerateNormals(std::vector<float>& vertexCoords, std::vector<std::array<int, 10>>& faces, std::vector<float>& normalCoords);
 	void static GenerateTangents(std::vector<float>& vertexBuffer, std::vector<unsigned int>& indexBuffer, Model& model, bool& hasNormals, bool& hasTangents, unsigned int& stride, unsigned int startIndex, unsigned int endIndex);
 	void static GenerateTangents(std::vector<float>& vertexCoords, std::vector<float>& textureCoords, std::vector<float>& normalCoords, std::vector<std::array<int, 10>>& faces, std::vector<float>& tangentCoords, std::vector<float>& bitangentCoords);
-
-	std::vector<Mesh*> m_meshes;
 
 private:
 

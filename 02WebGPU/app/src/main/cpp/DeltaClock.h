@@ -14,7 +14,11 @@ class DeltaClock {
         float mMaxDelta;
         bool mHasMax;
         mutable float d;
+
+
     public:
+
+        mutable float fdt;
 
         DeltaClock() {
             mLastTick = Clock();
@@ -30,6 +34,11 @@ class DeltaClock {
             mLastTick = Clock();
             return d;
         }
+
+        float& ReadFixedDelta() const{
+            return fdt;
+        }
+
         void SetMaxDelta(float m) {
             mMaxDelta = m;
         }

@@ -17,6 +17,7 @@
 #include "RenderThread.h"
 #include "AssetIO.h"
 #include "InputTouch.h"
+#include "Globals.h"
 
 #include <WebGPU/WgpContext.h>
 #include <WebGPU/WgpTexture.h>
@@ -29,7 +30,7 @@
 #include <States/VolumeRendering.h>
 #include <States/AudioDecode.h>
 #include <States/VideoDecode.h>
-#include <States/BowSimulation.h>
+#include <States/Cubes.h>
 #include <States/Isometric.h>
 
 #include <core/Event.h>
@@ -44,6 +45,7 @@
 DeltaClock DeltaClock;
 RenderThread* renderThread = nullptr;
 StateMachine* stateMachine= nullptr;
+extern std::unique_ptr<Physics> Globals::physics = nullptr;
 States currentState = States::COLLADA;
 
 State* recoverState(States crrntStt){
@@ -62,8 +64,8 @@ State* recoverState(States crrntStt){
             return new AudioDecode(*stateMachine);
         case States::VIDEO_DECODE:
             return new VideoDecode(*stateMachine);
-        case States::BOW_SIMULATION:
-            return new BowSimulation(*stateMachine);
+        case States::CUBES:
+            return new Cubes(*stateMachine);
         case States::ISOMETRIC:
             return new Isometric(*stateMachine);
     }
@@ -72,10 +74,10 @@ State* recoverState(States crrntStt){
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_wgpInit(JNIEnv* env, jclass clazz, jobject assetManager) {
     SoundDevice::Init();
     AssetIO::Init(AAssetManager_fromJava(env, assetManager));
+    Globals::physics = std::make_unique<Physics>();
 
     wgpInit();
-    float fdt = 0.0f;
-    stateMachine = new StateMachine( DeltaClock.ReadDelta(), fdt);
+    stateMachine = new StateMachine( DeltaClock.ReadDelta(), DeltaClock.ReadFixedDelta());
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_initStates(JNIEnv* env, jclass clazz){
@@ -159,8 +161,10 @@ Java_com_android_webgpu_NativeLibrary_nativeSendTouch(JNIEnv* env, jclass clazz,
     touchStates[pointer_id].touchY = y;
 
     if (action_type == 0 || action_type == 1) {
+        touchStates[pointer_id].touchPressed = !touchStates[pointer_id].touchActive;
         touchStates[pointer_id].touchActive = true;
     } else if (action_type == 2) {
         touchStates[pointer_id].touchActive = false;
+        touchStates[pointer_id].touchPressed = false;
     }
 }

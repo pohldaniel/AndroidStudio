@@ -1,6 +1,7 @@
 #include "WebGPU/WgpContext.h"
 #include "States/StateMachine.h"
 #include "DeltaClock.h"
+#include "Globals.h"
 #include "RenderThread.h"
 
 void RenderThread::start() {
@@ -81,7 +82,16 @@ void RenderThread::threadLoop() {
         m_pause = false;
         lock.unlock();
 
-        deltaClock.ReadDelta();
+        float dt = deltaClock.ReadDelta();
+
+        m_accumulator = dt > FIXED_STEP * 2.0f ? m_accumulator + FIXED_STEP: m_accumulator + dt;
+
+        while(m_accumulator >= FIXED_STEP) {
+            deltaClock.fdt = FIXED_STEP;
+            stateMachine.fixedUpdate();
+            m_accumulator -= FIXED_STEP;
+        }
+
         stateMachine.update();
         stateMachine.render();
     }

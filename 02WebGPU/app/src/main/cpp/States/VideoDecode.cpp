@@ -4,7 +4,7 @@
 #include <Nuklear/NkStyle.h>
 
 #include <States/AudioDecode.h>
-#include <States/Isometric.h>
+#include <States/Cubes.h>
 
 #include "VideoDecode.h"
 #include "InputTouch.h"
@@ -111,7 +111,7 @@ void VideoDecode::OnButton(const Event::MouseButtonEvent& event) {
     }
 
     if(event.button == Event::MouseButtonEvent::BUTTON_RIGHT){
-        m_machine.addStateAtBottom(new Isometric(m_machine));
+        m_machine.addStateAtBottom(new Cubes(m_machine));
     }
 }
 

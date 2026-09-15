@@ -22,6 +22,7 @@ public:
     m_blockUiThreadCv(),
     m_readyToRenderCv(),
     m_window(nullptr),
+    m_accumulator(0.0f),
     deltaClock(deltaClock),
     stateMachine(stateMachine){
 
@@ -52,6 +53,7 @@ private:
     std::condition_variable m_readyToRenderCv;
 
     std::atomic<ANativeWindow*> m_window;
+    float m_accumulator;
 
     const DeltaClock& deltaClock;
     StateMachine& stateMachine;

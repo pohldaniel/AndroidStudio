@@ -16,6 +16,7 @@ enum VertexLayoutSlot {
 	VL_P,
 	VL_PT,
 	VL_PN,
+	VL_PC,
 	VL_PNC,
 	VL_PTN,
 	VL_PTNC,
