@@ -4,11 +4,13 @@
 CacheLRU<std::string, OboeEffect::CacheEntry> OboeEffect::Cache;
 
 OboeEffect::OboeEffect(){
-
+    Cache.Init(5u);
 }
 
 OboeEffect::~OboeEffect(){
-
+    if (m_stream)
+        m_stream->close();
+    Cache.Clear();
 }
 
 void OboeEffect::init() {
@@ -32,7 +34,6 @@ void OboeEffect::play(const std::string& file) {
 
     bool channelFound = false;
     for (auto& channel : m_softwareMixer.m_channels) {
-        int expected = 0;
         if (channel.status == 0) {
             channel.pcmData = &entry.m_samples;
             channel.progress = 0;

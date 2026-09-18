@@ -172,9 +172,10 @@ void Cubes::resize(int deltaW, int deltaH) {
 }
 
 void Cubes::OnButton(const Event::MouseButtonEvent& event) {
+    Physics::DebugDrawer.shutDown();
     wgpCleanState();
     nkShutDown();
-    Physics::DebugDrawer.shutDown();
+
     m_isRunning = false;
 
     if(event.button == Event::MouseButtonEvent::BUTTON_LEFT){

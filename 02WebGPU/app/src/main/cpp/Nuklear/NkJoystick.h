@@ -14,10 +14,10 @@ struct RotationResult {
 };
 
 struct RotationButtonResult {
-	float degrees;
-	bool isRotating;
-	bool buttonPressed;
-	bool buttonDown;
+	float degrees = 0.0f;
+	bool isRotating = false;
+	bool buttonPressed = false;
+	bool buttonDown = false;
 	bool isActive = false;
 };
 
@@ -36,5 +36,5 @@ extern "C" {
 	void nk_virtual_rotation_button(struct nk_context* ctx, float size_px, int touch_id, RotationButtonResult& out);
 
 	bool rounded_button(struct nk_rect dimension, const char* label, int touch_id, bool& isPressed);
-	void nk_rounded_button_logic(struct nk_context* ctx, const char* label, int touch_id, bool& isPressed);
+	void nk_rounded_button(struct nk_context* ctx, const char* label, int touch_id, bool& isPressed);
 }

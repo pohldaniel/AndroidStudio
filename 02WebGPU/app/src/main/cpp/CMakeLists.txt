@@ -65,8 +65,8 @@ add_subdirectory(Sound)
 add_subdirectory(Video)
 add_subdirectory(Physics)
 
-add_library(native SHARED bullet_store.cpp Native.cpp InputTouch.cpp DeltaClock.cpp RenderThread.cpp AssetIO.cpp)
-target_include_directories(native PRIVATE bullet_store.h InputTouch.h DeltaClock.h RenderThread.h AssetIO.h)
+add_library(native SHARED enemy_spawner.cpp bullet_store.cpp Native.cpp InputTouch.cpp DeltaClock.cpp RenderThread.cpp AssetIO.cpp)
+target_include_directories(native PRIVATE enemy_spawner.h bullet_store.h InputTouch.h DeltaClock.h RenderThread.h AssetIO.h)
 target_link_libraries(native core shape states webgpu nuklear sound video physics avformat avcodec swresample swscale avutil freeimage assimp openal oboe daisysp bulletcollision bulletdynamics linearmath wgpu zlib android log)
 
 target_include_directories(webgpu PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Shape")

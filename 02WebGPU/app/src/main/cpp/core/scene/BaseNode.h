@@ -19,8 +19,8 @@ public:
 	BaseNode();
 	BaseNode(const BaseNode& rhs);
 	BaseNode& operator=(const BaseNode& rhs);
-	BaseNode(BaseNode&& rhs);
-	BaseNode& operator=(BaseNode&& rhs);
+	BaseNode(BaseNode&& rhs) noexcept;
+	BaseNode& operator=(BaseNode&& rhs) noexcept;
 
 	virtual const glm::mat4& getWorldTransformation() const = 0;
 	virtual const glm::vec3& getWorldPosition(bool update = true) const = 0;

@@ -102,9 +102,9 @@ public:
 	virtual void rotate(const glm::quat& orientation);
 	virtual void rotate(float x, float y, float z, float w);
 
-	const glm::vec3& getPosition() const;
-	const glm::vec3& getScale() const;
-	const glm::quat& getOrientation() const;
+	virtual const glm::vec3& getPosition() const;
+	virtual const glm::vec3& getScale() const;
+	virtual const glm::quat& getOrientation() const;
 	glm::vec3& getPosition();
 	glm::vec3& getScale();
 	glm::quat& getOrientation();

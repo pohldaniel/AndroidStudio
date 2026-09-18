@@ -11,8 +11,8 @@ public:
 	SceneNode();
 	SceneNode(const SceneNode& rhs);
 	SceneNode& operator=(const SceneNode& rhs);
-	SceneNode(SceneNode&& rhs);
-	SceneNode& operator=(SceneNode&& rhs);
+	SceneNode(SceneNode&& rhs) noexcept;
+	SceneNode& operator=(SceneNode&& rhs) noexcept;
 
 	const glm::mat4& getWorldTransformation() const override;
 	const glm::vec3& getWorldPosition(bool update = true) const override;

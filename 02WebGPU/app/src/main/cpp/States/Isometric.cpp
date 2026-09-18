@@ -1,3 +1,5 @@
+#include <glm/gtc/type_ptr.hpp>
+
 #include <WebGPU/WgpContext.h>
 #include <WebGPU/WgpRenderer.h>
 
@@ -7,9 +9,16 @@
 #include <States/Cubes.h>
 #include <States/Collada.h>
 
+#include <core/scene/CollisionNode.h>
+
+#include <core/entities/CollisionEntity.h>
+#include <core/entities/Enemy.h>
+#include <core/entities/Player.h>
+
 #include "InputTouch.h"
 #include "Isometric.h"
 #include "Logging.h"
+#include "Globals.h"
 #include "DeltaClock.h"
 
 glm::mat4 offset = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
@@ -29,10 +38,11 @@ glm::mat4 invPivot = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
 
 ThreadPool threadPool(4);
 
-Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC), m_bulletStore(&threadPool) {
+Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC), m_bulletStore(&threadPool), m_enemySpawner(120.0f * 0.0044f, m_player) {
 
     nkInit(static_cast<float>(wgpWidth), static_cast<float>(wgpHeight));
     nkInitFont("fonts/upheavtt.ttf");
+    Physics::DebugDrawer.init();
 
     m_camera.perspective(glm::radians(45.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 100.0f);
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), 0.0f, static_cast<float>(wgpHeight), -1.0f, 1.0f);
@@ -42,6 +52,7 @@ Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC),
 
     m_trackball.reshape(wgpWidth, wgpHeight);
     m_floor.buildQuadXZ({-50.0f, 0.0f, -50.0f}, {100.0f, 100.0f});
+    m_floor.rotate(0.0f, 45.0f, 0.0f);
     m_bullet.buildQuadXZ({ -0.3f * 0.243f, 0.0f, -0.3f * 0.243f }, { 0.3f * 0.5f, 0.3f * 0.5f }, 1u, 1u, true, false);
 
     AnimationManager::Get().getAnimation("full").loadAnimationAssimp("models/Player.fbx", "Player", "full", 0u, 245u);
@@ -60,7 +71,6 @@ Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC),
 
     m_enemy.loadModel("models/EelDog/EelDog.fbx");
     m_enemy.rotate(90.0f, 0.0f, 0.0f);
-    m_enemy.rotate(0.0f, 180.0f, 0.0f);
     m_enemy.scale(0.01f);
 
     Material::CleanupMaterials();
@@ -99,8 +109,12 @@ Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC),
     m_player.getAnimationState(5u)->setLooped(false);
     m_player.update(0.1f);
 
+    m_fire.init<OboeEffect>();
+    m_ding.init<OboeEffect>();
+    m_ding.get<OboeEffect>()->getMixer().setVolume(0.5f);
+
     m_uniformBuffer.createBuffer(sizeof(Uniforms), WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform);
-    m_instanceBuffer.createBuffer(sizeof(Uniforms), WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform);
+    m_storageBuffer.createBuffer(1000u * sizeof(glm::mat4), WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst);
     m_wigglyBuffer.createBuffer(sizeof(glm::vec4), WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform);
     m_skinBuffer.createBuffer(sizeof(glm::mat4) * 96u, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Storage);
     m_rotationBuffer.createBuffer(sizeof(glm::vec4) * 4000u, WGPUBufferUsage_CopyDst | WGPUBufferUsage_Uniform);
@@ -148,30 +162,120 @@ Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC),
     m_wgpBullet.setBindGroups("BG", std::bind(&Isometric::OnBindGroupsBullet, this));
 
     m_wgpEnemy.create(m_enemy);
-    m_wgpEnemy.addBindGroup("BG", CreateBindGroup(m_instanceBuffer, m_wigglyBuffer, m_wgpEnemyD));
-
-    m_fire.init<OboeEffect>();
-    m_ding.init<OboeEffect>();
-    m_ding.get<OboeEffect>()->getMixer().setVolume(0.5f);
+    m_wgpEnemy.addBindGroup("BG", CreateBindGroup(m_uniformBuffer, m_wigglyBuffer, m_wgpEnemyD, m_storageBuffer));
 
     wgpContext.setClearColor({ 0.2f, 0.2f, 0.2f, 1.0f });
     wgpContext.OnDraw = std::bind(&Isometric::OnDraw, this, std::placeholders::_1, std::placeholders::_2);
     nkContext.OnFillBuffer = std::bind(&Isometric::OnFillBuffer, this, std::placeholders::_1);
+
+    m_scene = new SceneNode();
+    m_scene->setOnChildAdded([this](Node* newNode) {
+        if (auto* enemy = dynamic_cast<Enemy*>(newNode)) {
+            m_enemies.push_back(enemy);
+            m_enemySpawner.count()++;
+        }
+    });
+
+    m_scene->setOnChildRemoved([this](Node* removedNode) {
+        auto it = std::find(m_enemies.begin(), m_enemies.end(), removedNode);
+        if (it != m_enemies.end()) {
+            std::iter_swap(it, m_enemies.end() - 1);
+            m_enemies.pop_back();
+            m_enemySpawner.count()--;
+        }
+    });
+
+    m_enemySpawner.scene = m_scene;
+    m_targetPoolSize = 100;
+
+    btCollisionObject* body = Physics::AddKinematicObject(Physics::BtTransform(glm::vec3(0.0f, 0.4f, 0.0f)), new btCylinderShape(btVector3(0.35f * 0.5f, 0.4f, 0.35f * 0.5f)), Physics::collisiontypes::CHARACTER, Physics::collisiontypes::ENEMY);
+    m_playerEnitity = m_scene->addChild<Player>(body, m_player);
 }
 
 Isometric::~Isometric() {
+    delete m_scene;
     m_uniformBuffer.markForDelete();
+    m_storageBuffer.markForDelete();
+    m_wigglyBuffer.markForDelete();
     m_skinBuffer.markForDelete();
+    m_rotationBuffer.markForDelete();
+    m_offsetBuffer.markForDelete();
 }
 
 void Isometric::fixedUpdate() {
+    size_t activeBulletCount = m_bulletStore.m_offsets.size();
 
+    while (m_entities.size() < activeBulletCount) {
+        createNewBulletToPool();
+    }
+
+    while (m_entities.size() > activeBulletCount) {
+        CollisionEntity* lastEntity = m_entities.back();
+        m_scene->eraseChildSilent(lastEntity);
+        m_entities.pop_back();
+    }
+
+    for (auto entity : m_entities) {
+        entity->setActive(false);
+    }
+
+    for (size_t i = 0; i < activeBulletCount; ++i) {
+        glm::vec3 pos = m_bulletStore.m_offsets[i];
+        glm::quat rot = m_bulletStore.m_rots[i];
+
+        m_entities[i]->setActive(true);
+        m_entities[i]->setPosition(pos[0], pos[1], pos[2]);
+        m_entities[i]->setOrientation(rot.x, rot.y, rot.z, rot.w);
+    }
+
+    for (size_t i = activeBulletCount; i < m_entities.size(); ++i) {
+        if (m_entities[i]->isActive()) {
+            m_entities[i]->setActive(false);
+        }
+    }
+
+    for (auto entity : m_entities) {
+        entity->fixedUpdate(m_fdt);
+    }
+
+    for (auto enemy : m_enemies) {
+        enemy->fixedUpdate(m_fdt);
+    }
+
+    m_playerEnitity->fixedUpdate(m_fdt);
+
+    Globals::physics->stepSimulation(FIXED_STEP);
+
+    BulletCollisionPlayerCallback callback;
+    Physics::GetDynamicsWorld()->contactTest(m_playerEnitity->getCollisionObject(), callback);
+    if (callback.m_hasCollided && callback.m_hitTarget) {
+        m_playerEnitity->setActive(false);
+        m_isDeath = true;
+    }
+
+    for (auto entity : m_entities) {
+        if (!entity->isActive()) continue;
+
+        BulletCollisionCallback callback;
+        Physics::GetDynamicsWorld()->contactTest(entity->getCollisionObject(), callback);
+
+        if (callback.m_hasCollided && callback.m_hitTarget) {
+            void* userPtr = callback.m_hitTarget->getUserPointer();
+            if (userPtr) {
+                Enemy* hitEnemy = static_cast<Enemy*>(userPtr);
+                hitEnemy->setActive(false);
+                m_scene->eraseChild(hitEnemy);
+
+                m_ding.play("sounds/bullet_hit_metal_enemy_4.wav");
+            }
+        }
+    }
 }
 
 void Isometric::update() {
 	nkUpdateInput(0, 0, false, false, 0.0f);
 
-    if (m_rotationButtonResult.buttonDown && (lastFireTime + 0.1f) < Clock()) {
+    if (!m_isDeath && m_rotationButtonResult.buttonDown && (lastFireTime + 0.1f) < Clock()) {
         const glm::quat midOri = m_player.getOrientation();
         const glm::mat4 playerModelTransform = m_player.getWorldTransformation();
         const glm::vec3 projectileSpawnPoint = playerModelTransform * glm::vec4(-20.0f, 120.0f, 100.0f, 1.0f);
@@ -230,7 +334,7 @@ void Isometric::update() {
     playerMove = glm::length2(playerDirection) > 0.01f && !m_isDeath;
 
     if (playerMove) {
-        m_player.translate(playerDirection[0] * 2.0f * m_dt, playerDirection[1] * 2.0f * m_dt, playerDirection[2] * 2.0f * m_dt);
+        m_playerEnitity->translate(playerDirection[0] * 2.0f * m_dt, playerDirection[1] * 2.0f * m_dt, playerDirection[2] * 2.0f * m_dt);
     }
 
     float movementTheta = std::atan2(playerDirection[0], playerDirection[2]);
@@ -275,6 +379,11 @@ void Isometric::update() {
     m_player.update(m_dt);
     m_player.updateSkinning();
     m_bulletStore.updateBullets(m_dt);
+    m_enemySpawner.update(posistion, m_dt);
+
+    for (auto enemy : m_enemies) {
+        enemy->update(m_dt);
+    }
 
     m_uniforms.projection = m_camera.getPerspectiveMatrix();
     m_uniforms.view = m_camera.getViewMatrix();
@@ -290,9 +399,14 @@ void Isometric::update() {
     mesh->skinMatrices()[42] = mesh->getBone(43u).getWorldTransformation() * offset * pivot * mesh->skinMatrices()[42];
     wgpuQueueWriteBuffer(wgpContext.queue, m_skinBuffer.getBuffer(), 0u, mesh->getSkinMatrices(), mesh->getNumBones() * sizeof(glm::mat4));
 
-    glm::vec3 posEnemy = glm::vec3(2.0f, 120.0f * 0.0044f, 2.0f);
-    m_uniforms.model = glm::translate(posEnemy) * glm::eulerAngleXYZ(0.0f, glm::radians(getLookAtYRotation(posistion, posEnemy)), 0.0f);
-    wgpuQueueWriteBuffer(wgpContext.queue, m_instanceBuffer.getBuffer(), 0u, &m_uniforms, sizeof(Uniforms));
+    m_cpuInstanceBuffer.clear();
+    m_cpuInstanceBuffer.reserve(m_enemies.size());
+
+    for (const auto& child : m_enemies) {
+        m_cpuInstanceBuffer.push_back(child->getTransformationSOP());
+    }
+
+    wgpuQueueWriteBuffer(wgpContext.queue, m_storageBuffer.getBuffer(), 0u, m_cpuInstanceBuffer.data(), m_cpuInstanceBuffer.size() * sizeof(glm::mat4));
 
     m_wiggly.nosePos[0] = 1.0f ;
     m_wiggly.nosePos[1] = 120.0f * 0.0044f ;
@@ -302,6 +416,12 @@ void Isometric::update() {
 
     wgpuQueueWriteBuffer(wgpContext.queue, m_rotationBuffer.getBuffer(), 0u, m_bulletStore.m_rots.data(), m_bulletStore.m_rots.size() * sizeof(glm::vec4));
     wgpuQueueWriteBuffer(wgpContext.queue, m_offsetBuffer.getBuffer(), 0u, m_bulletStore.m_offsets.data(), m_bulletStore.m_offsets.size() * sizeof(glm::vec4));
+
+    if (m_debugCollision) {
+        glm::mat4 viewProjection = m_camera.getPerspectiveMatrix() * m_camera.getViewMatrix();
+        float* targetArray = Physics::DebugDrawer.getViewProjection();
+        std::copy(glm::value_ptr(viewProjection), glm::value_ptr(viewProjection) + 16, targetArray);
+    }
 }
 
 void Isometric::render() {
@@ -317,7 +437,7 @@ void Isometric::OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURende
         m_wgpFloor.draw(renderPassEncoder);
 
         wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_WIGGLY"));
-        m_wgpEnemy.draw(renderPassEncoder);
+        m_wgpEnemy.draw(renderPassEncoder, m_cpuInstanceBuffer.size());
 
         wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_ANIMATION"));
         m_wgpPlayer.draw(renderPassEncoder);
@@ -327,6 +447,12 @@ void Isometric::OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURende
 
         wgpuRenderPassEncoderEnd(renderPassEncoder);
         wgpuRenderPassEncoderRelease(renderPassEncoder);
+    }
+
+    if (m_debugCollision)
+    {
+        Physics::GetDynamicsWorld()->debugDrawWorld();
+        Physics::DebugDrawer.OnDraw(commandEncoder, renderPassDescriptor);
     }
 
     {
@@ -368,6 +494,7 @@ void Isometric::resize(int deltaW, int deltaH) {
 }
 
 void Isometric::OnButton(const Event::MouseButtonEvent& event) {
+    Physics::DebugDrawer.shutDown();
     wgpCleanState();
     nkShutDown();
     m_isRunning = false;
@@ -434,14 +561,14 @@ std::vector<WGPUBindGroupLayout> Isometric::OnBindGroupLayoutsFloor() {
 std::vector<WGPUBindGroupLayout> Isometric::OnBindGroupLayoutsWiggly() {
     std::vector<WGPUBindGroupLayout> bindingLayouts(1);
 
-    std::vector<WGPUBindGroupLayoutEntry> bindingLayoutEntries(4);
+    std::vector<WGPUBindGroupLayoutEntry> bindingLayoutEntries(5);
     bindingLayoutEntries[0].binding = 0u;
-    bindingLayoutEntries[0].visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+    bindingLayoutEntries[0].visibility = WGPUShaderStage_Vertex;
     bindingLayoutEntries[0].buffer.type = WGPUBufferBindingType::WGPUBufferBindingType_Uniform;
     bindingLayoutEntries[0].buffer.minBindingSize = sizeof(Uniforms);
 
     bindingLayoutEntries[1].binding = 1u;
-    bindingLayoutEntries[1].visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+    bindingLayoutEntries[1].visibility = WGPUShaderStage_Vertex;
     bindingLayoutEntries[1].buffer.type = WGPUBufferBindingType::WGPUBufferBindingType_Uniform;
     bindingLayoutEntries[1].buffer.minBindingSize = sizeof(glm::vec4);
 
@@ -453,6 +580,11 @@ std::vector<WGPUBindGroupLayout> Isometric::OnBindGroupLayoutsWiggly() {
     bindingLayoutEntries[3].visibility = WGPUShaderStage_Fragment;
     bindingLayoutEntries[3].texture.sampleType = WGPUTextureSampleType::WGPUTextureSampleType_Float;
     bindingLayoutEntries[3].texture.viewDimension = WGPUTextureViewDimension::WGPUTextureViewDimension_2D;
+
+    bindingLayoutEntries[4].binding = 4u;
+    bindingLayoutEntries[4].visibility = WGPUShaderStage_Vertex;
+    bindingLayoutEntries[4].buffer.type = WGPUBufferBindingType::WGPUBufferBindingType_ReadOnlyStorage;
+    bindingLayoutEntries[4].buffer.minBindingSize = 1000u * sizeof(glm::mat4);
 
     WGPUBindGroupLayoutDescriptor bindGroupLayoutDescriptor = {};
     bindGroupLayoutDescriptor.entryCount = (uint32_t)bindingLayoutEntries.size();
@@ -586,12 +718,12 @@ std::vector<WGPUBindGroup> Isometric::OnBindGroupsBullet() {
     return bindGroups;
 }
 
-WGPUBindGroup Isometric::CreateBindGroup(const WgpBuffer& uniformBuffer, const WgpBuffer& wigglyBuffer, const WgpTexture& texture) {
-    std::vector<WGPUBindGroupEntry> bindGroupEntries(4);
+WGPUBindGroup Isometric::CreateBindGroup(const WgpBuffer& uniformBuffer, const WgpBuffer& wigglyBuffer, const WgpTexture& texture, const WgpBuffer& storageBuffer) {
+    std::vector<WGPUBindGroupEntry> bindGroupEntries(5);
     bindGroupEntries[0].binding = 0u;
     bindGroupEntries[0].buffer = uniformBuffer.getBuffer();
     bindGroupEntries[0].offset = 0u;
-    bindGroupEntries[0].size = sizeof(Uniforms);
+    bindGroupEntries[0].size = wgpuBufferGetSize(uniformBuffer.getBuffer());
 
     bindGroupEntries[1].binding = 1u;
     bindGroupEntries[1].buffer = wigglyBuffer.getBuffer();
@@ -603,6 +735,11 @@ WGPUBindGroup Isometric::CreateBindGroup(const WgpBuffer& uniformBuffer, const W
 
     bindGroupEntries[3].binding = 3u;
     bindGroupEntries[3].textureView = texture.getTextureView();
+
+    bindGroupEntries[4].binding = 4u;
+    bindGroupEntries[4].buffer = storageBuffer.getBuffer();
+    bindGroupEntries[4].offset = 0u;
+    bindGroupEntries[4].size = wgpuBufferGetSize(storageBuffer.getBuffer());
 
     WGPUBindGroupDescriptor bindGroupDesc = {};
     bindGroupDesc.layout = wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at("RP_WIGGLY"), 0u);
@@ -620,4 +757,17 @@ float Isometric::getLookAtYRotation(const glm::vec3& objectPos, const glm::vec3&
         return 0.0f;
 
     return glm::degrees(std::atan2(dx, dz));
+}
+
+CollisionEntity* Isometric::createNewBulletToPool() {
+    btTransform startTransform;
+    startTransform.setIdentity();
+
+    btCollisionObject* body = Physics::AddKinematicObject(startTransform, new btCapsuleShapeX(0.03f, 0.3f), Physics::collisiontypes::SPHERE, Physics::collisiontypes::ENEMY);
+
+    CollisionEntity* entity = m_scene->addChildSilent<CollisionEntity>(body);
+    entity->setActive(false);
+    m_entities.push_back(entity);
+
+    return entity;
 }
