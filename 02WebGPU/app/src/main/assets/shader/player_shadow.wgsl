@@ -6,15 +6,6 @@ struct VertexInput {
 	@location(4) joint: vec4u
 };
 
-struct VertexOutput {
-	@builtin(position) position: vec4f,
-	@location(1) texcoord: vec2f,
-	@location(2) normal: vec3f,
-	@location(3) color: vec4f,
-	@location(4) weight: vec4f,
-	@location(5) joint: vec4f
-};
-
 struct Uniforms {
     projection: mat4x4<f32>,
 	view: mat4x4<f32>,
@@ -37,22 +28,7 @@ fn get_world_matrix(weight : vec4f, joint : vec4u) -> mat4x4f {
 }
 
 @vertex
-fn vs_main(in: VertexInput) -> VertexOutput {
-	var out: VertexOutput;
-	let world = get_world_matrix(in.weight, in.joint);  
-	
-	out.position = uniforms.projection * uniforms.view * world * vec4f(in.position, 1.0);
-	out.normal = in.normal;
-	out.texcoord = in.texcoord;
-	out.color = uniforms.color;
-	
-	out.weight = in.weight;
-	out.joint = vec4f(f32(in.joint[0]), f32(in.joint[1]), f32(in.joint[2]), f32(in.joint[3]));
-	
-	return out;
-}
-
-@fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-	return vec4f(in.normal, 1.0);
+fn vs_main(in: VertexInput) -> @builtin(position) vec4f  {	
+	let world = get_world_matrix(in.weight, in.joint);  	
+	return uniforms.lightVP * world * vec4f(in.position, 1.0);	
 }

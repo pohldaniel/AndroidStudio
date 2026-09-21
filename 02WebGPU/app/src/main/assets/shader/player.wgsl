@@ -1,9 +1,10 @@
 struct VertexInput {
 	@location(0) position: vec3f,
 	@location(1) texcoord: vec2f,
-	@location(2) normal: vec3f
+	@location(2) normal: vec3f,
+	@location(3) weight: vec4f,
+	@location(4) joint: vec4u
 };
-
 
 struct VertexOutput {
 	@builtin(position) position: vec4f,
@@ -27,19 +28,26 @@ struct Uniforms {
 };
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
-@group(0) @binding(1) var smplr: sampler;
-@group(0) @binding(2) var texture: texture_2d<f32>;
-@group(0) @binding(3) var shadowSampler : sampler_comparison; 
-@group(0) @binding(4) var shadowMap : texture_depth_2d;          
-    
+@group(0) @binding(1) var<storage, read> skin: array<mat4x4f>;
+@group(0) @binding(2) var shadowSampler : sampler_comparison; 
+@group(0) @binding(3) var shadowMap : texture_depth_2d; 
+
+fn get_world_matrix(weight : vec4f, joint : vec4u) -> mat4x4f {
+	return skin[joint.x] * weight.x + skin[joint.y] * weight.y +
+           skin[joint.z] * weight.z + skin[joint.w] * weight.w;
+}
+
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
 	var out: VertexOutput;
-	out.position = uniforms.projection * uniforms.view * vec4f(in.position, 1.0);
-	out.shadowPos = uniforms.shadow * vec4f(in.position, 1.0); 
+	let world = get_world_matrix(in.weight, in.joint);  
+	
+	out.position = uniforms.projection * uniforms.view * world * vec4f(in.position, 1.0);
+	out.shadowPos = uniforms.shadow * world * vec4f(in.position, 1.0);
 	out.normal = in.normal;
 	out.texcoord = in.texcoord;
 	out.color = uniforms.color;
+	
 	return out;
 }
 
@@ -60,8 +68,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 	}      
 	shadow /= 4.0;
     let shadowIntensity = shadow * 0.7;
-    let lightFactor = 1.0 - shadowIntensity; 
-    
-	let texColor = textureSample(texture, smplr, in.texcoord * 100.0);
-    return vec4<f32>(texColor.rgb * lightFactor, texColor.a);
+    let lightFactor = 1.0 - shadowIntensity;
+	
+	return vec4f(in.normal * lightFactor, 1.0);
 }

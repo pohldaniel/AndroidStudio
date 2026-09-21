@@ -160,7 +160,6 @@ void wgpCreateDevice() {
     requiredLimits.maxTextureDimension1D = 4096u;
     requiredLimits.maxTextureDimension2D = 4096u;
     requiredLimits.maxTextureDimension3D = 2048u;
-    requiredLimits.maxSamplersPerShaderStage = 1u;
 
     WGPUUncapturedErrorCallbackInfo uncapturedErrorCallbackInfo = {};
     uncapturedErrorCallbackInfo.callback = OnErrorDevice;

@@ -177,8 +177,9 @@ static void WriteMipMaps(WGPUTexture& texture, WGPUExtent3D textureSize, uint32_
             uint16_t* float16 = GetFloat16(reinterpret_cast<float*>(pixels.data()), mipLevelSize.width, mipLevelSize.height, channels);
             wgpuQueueWriteTexture(wgpContext.queue, &destination, float16, mipLevelSize.width * mipLevelSize.height * channels * sizeof(uint16_t), &source, &mipLevelSize);
             free(float16);
-        }else
-            wgpuQueueWriteTexture(wgpContext.queue, &destination, pixels.data(), pixels.size() * sizeof(component_t), &source, &mipLevelSize);
+        }else if(!pixels.empty()){
+            wgpuQueueWriteTexture(wgpContext.queue, &destination, pixels.data(),pixels.size() * sizeof(component_t), &source, &mipLevelSize);
+        }
 
         previousLevelPixels = std::move(pixels);
         previousMipLevelSize = mipLevelSize;
@@ -897,6 +898,6 @@ std::vector<unsigned char*> WgpTexture::CrossToFaces(unsigned char* source, uint
 }
 
 uint32_t WgpTexture::BitWidth(uint32_t m) {
-    if (m == 0u) return 0u;
-    else { uint32_t w = 0u; while (m >>= 1) ++w; return w + 1u; }
+    if (m == 0) return 0;
+    else { uint32_t w = 0; while (m >>= 1) ++w; return w + 1u; }
 }
