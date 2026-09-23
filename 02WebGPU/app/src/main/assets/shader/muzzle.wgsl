@@ -57,6 +57,7 @@ fn vs_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
 	let instance = instances[0];
 	
 	let frameIndex = u32(instance.currentFrame);
+    //let sizePerFrame = vec2f(1.0 / 6.0, 1.0); 
 	let cols = u32(info.colRow.x);
     let uvOffset = vec2f(f32(frameIndex % cols), f32(frameIndex / cols)) * info.frameSize;
     out.texcoord = uvOffset + (uvs[vertexIndex] * info.frameSize);

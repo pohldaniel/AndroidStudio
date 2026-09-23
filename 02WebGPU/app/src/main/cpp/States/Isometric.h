@@ -39,31 +39,6 @@ struct BulletCollisionCallback : public btCollisionWorld::ContactResultCallback 
         if (targetObj->getCollisionFlags() & btCollisionObject::CF_NO_CONTACT_RESPONSE)
             return false;
 
-        return (Physics::collisiontypes::ENEMY & proxy->m_collisionFilterGroup) && (Physics::collisiontypes::SPHERE & proxy->m_collisionFilterMask);
-    }
-
-    virtual btScalar addSingleResult(btManifoldPoint& cp,
-                                     const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0,
-                                     const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1) override
-    {
-        m_hasCollided = true;
-        m_hitTarget = const_cast<btCollisionObject*>(colObj1Wrap->getCollisionObject());
-        return 0;
-    }
-};
-
-struct BulletCollisionPlayerCallback : public btCollisionWorld::ContactResultCallback {
-    bool m_hasCollided = false;
-    btCollisionObject* m_hitTarget = nullptr;
-    virtual bool needsCollision(btBroadphaseProxy* proxy) const override {
-
-        auto* targetObj = static_cast<btCollisionObject*>(proxy->m_clientObject);
-        if (!targetObj)
-            return false;
-
-        if (targetObj->getCollisionFlags() & btCollisionObject::CF_NO_CONTACT_RESPONSE)
-            return false;
-
         return (Physics::collisiontypes::ENEMY & proxy->m_collisionFilterGroup) && (Physics::collisiontypes::CHARACTER & proxy->m_collisionFilterMask);
     }
 
@@ -100,6 +75,22 @@ class Isometric : public State {
         float frameSize[2];
     };
 
+    struct DirectionalLight {
+        float direction[3];
+        float padding;
+        float color[4];
+    };
+
+    struct PointLight {
+        float position[3];
+        float padding;
+        float color[4];
+        uint32_t active;
+        uint32_t pad1;
+        uint32_t pad2;
+        uint32_t pad3;
+    };
+
 public:
 
     Isometric(StateMachine& machine);
@@ -111,7 +102,10 @@ public:
     void resize(int deltaW, int deltaH) override;
 
     void OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor);
+    void OnPostDraw();
     void OnDrawShadow(const WGPURenderPassEncoder& renderPassEncoder);
+    void OnDrawEmission(const WGPURenderPassEncoder& renderPassEncoder);
+    void OnDrawScene(const WGPURenderPassEncoder& renderPassEncoder);
     void OnFillBuffer(nk_context& nkCntxt);
     void OnButton(const Event::MouseButtonEvent& event) override;
 
@@ -124,27 +118,36 @@ private:
     std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsBillboard();
     std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsShadow();
     std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsWigglyShadow();
+    std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsBlur();
+    std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsEmission();
+    std::vector<WGPUBindGroup> OnBindGroupsPlayerEmission();
+    std::vector<WGPUBindGroup> OnBindGroupsGunEmission();
+    std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsFloorEmission();
+    std::vector<WGPUBindGroupLayout> OnBindGroupLayoutsComposite();
 
-    std::vector<WGPUBindGroup> OnBindGroups();
+    std::vector<WGPUBindGroup> OnBindGroupsPlayer();
+    std::vector<WGPUBindGroup> OnBindGroupsGun();
     std::vector<WGPUBindGroup> OnBindGroupsFloor();
     std::vector<WGPUBindGroup> OnBindGroupsBullet();
     std::vector<WGPUBindGroup> OnBindGroupsShadow();
+    std::vector<WGPUBindGroup> OnBindGroupsFloorEmission();
+
     WGPUBindGroup createBindGroupBillboard();
     WGPUBindGroup createBindGroupMuzzle();
     WGPUBindGroup createBindGroupWiggly();
+    WGPUBindGroup createBindGroupComposite();
+    WGPUBindGroup createBindGroupBlurH();
+    WGPUBindGroup createBindGroupBlurV();
 
-    void renderUi(const WGPURenderPassEncoder& renderPassEncoder);
-    float getLookAtYRotation(const glm::vec3& objectPos, const glm::vec3& targetPos);
     CollisionEntity* createNewBulletToPool();
+
     void spawnBillboard(const glm::vec3& position);
     void resetMuzzle();
     void updateBillboards(float dt);
-    void updateMuzzle(float dt);
+    void updateMuzzle(float dt, float x, float y, float z);
 
-    bool m_initUi = true;
-    bool m_drawUi = false;
     bool m_isDeath = false;
-    bool m_debugCollision = false;
+    bool m_wantResize = false;
 
     Camera m_camera;
     Uniforms m_uniforms;
@@ -161,9 +164,18 @@ private:
     Shape m_floor, m_bullet;
     Animation m_full;
     WgpBuffer m_uniformBuffer, m_infoBufferBillboard, m_infoBufferMuzzle, m_storageBuffer, m_wigglyBuffer, m_skinBuffer, m_rotationBuffer, m_offsetBuffer, m_spriteBuffer, m_muzzleBuffer;
+    WgpBuffer m_pointLightBuffer, m_directionalLightBuffer;
     WgpModel m_wgpPlayer, m_wgpFloor, m_wgpEnemy, m_wgpBullet;
-    WgpTexture m_wgpFloorD, m_wgpEnemyD, m_wgpBulletTexture, m_sprite, m_muzzle, m_wgpTextureShadow;
-    WGPUBindGroup m_bindGroupBillboard, m_bindGroupMuzzle;
+
+    WgpTexture m_wgpBulletTexture, m_sprite, m_muzzle, m_wgpTextureShadow;
+    WGPUBindGroup m_bindGroupBillboard, m_bindGroupMuzzle, m_bindGroupComposite, m_bindGroupBlurH, m_bindGroupBlurV;
+
+    WgpTexture m_wgpFloorD, m_wgpFloorN, m_wgpFloorS, m_wgpEnemyD, m_wgpEnemyN, m_wgpEnemyS, m_wgpPlayerD, m_wgpPlayerN, m_wgpPlayerS, m_wgpPlayerE, m_wgpGunD, m_wgpGunN, m_wgpGunS, m_wgpGunE;
+
+    WgpTexture m_wgpEmissionTarget, m_wgpEmissionDepth;
+    WgpTexture m_wgpSceneTarget, m_wgpSceneDepth;
+    WgpTexture m_wgpBlurTempTarget;
+    WgpTexture m_wgpBlurFinalTarget;
 
     float prev_idleWeight = 0.0f;
     float prev_rightWeight = 0.0f;
@@ -171,20 +183,20 @@ private:
     float prev_backWeight = 0.0f;
     float prev_leftWeight = 0.0f;
     const float animTransitionTime = 0.2f;
-    float deathTime = -1.0f;
     float aimTheta = 0.0f;
     float lastFireTime = 0.0f;
-    size_t m_targetPoolSize;
+    int m_spreadAmount = 20;
 
     EnemySpawner m_enemySpawner;
     std::vector<CollisionEntity*> m_entities;
-    Player* m_playerEnitity;
+    Player* m_playerEntity;
     std::vector<Enemy*> m_enemies;
     std::vector<glm::mat4> m_cpuInstanceBuffer;
     std::vector<SpriteInstance> m_activeBillboards;
     SpriteInstance m_muzzleInstance;
     glm::mat4 m_lightProjection, m_lightView;
     glm::vec3 m_lightDir;
+    std::vector<float> m_muzzleFlashSpritesAge;
 
     static WGPUBindGroup CreateBindGroupShadow(const WgpBuffer& uniformBuffer, const WgpBuffer& wigglyBuffer, const WgpBuffer& storageBuffer);
 };

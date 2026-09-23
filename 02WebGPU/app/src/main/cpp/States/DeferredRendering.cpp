@@ -83,10 +83,10 @@ DeferredRendering::DeferredRendering(StateMachine& machine) : State(machine, Sta
                                     WGPUTextureFormat_Undefined,
                                     WGPUTextureFormat_Undefined,
                                     WGPUCompareFunction_Less,
-                                    { WRITE_DEPTH | DEPTH_STENCIL_STATE | BLEND_STATE | FRAGMENT_STATE, BlendMode::ALPHA_BLENDING, WGPUTextureFormat_Undefined , WGPUCullMode_Undefined,  DEFAULT ,
+                                    { DEPTH_STENCIL_STATE | BLEND_STATE | FRAGMENT_STATE, ColorMode::WRITE_RGBA, DepthMode::WRITE, StencilMode::DEFAULT, BlendMode::ALPHA_BLENDING, WGPUTextureFormat_Undefined , WGPUCullMode_Undefined,
                                       {
-                                              { NULL, STRVIEW("canvasSizeWidth"), static_cast<double>(wgpWidth)   },
-                                              { NULL, STRVIEW("canvasSizeHeight"), static_cast<double>(wgpHeight) }
+                                              {nullptr, STRVIEW("canvasSizeWidth"), static_cast<double>(wgpWidth)   },
+                                              { nullptr, STRVIEW("canvasSizeHeight"), static_cast<double>(wgpHeight) }
                                       }
                                     }
     );
@@ -98,7 +98,7 @@ DeferredRendering::DeferredRendering(StateMachine& machine) : State(machine, Sta
                                     WGPUTextureFormat_BGRA8Unorm,
                                     WGPUTextureFormat_Depth24Plus,
                                     WGPUCompareFunction_Less,
-                                    { WRITE_DEPTH | DEPTH_STENCIL_STATE | BLEND_STATE | FRAGMENT_STATE, BlendMode::ALPHA_BLENDING, WGPUTextureFormat_RGBA16Float , WGPUCullMode_Undefined,  DEFAULT }
+                                    { DEPTH_STENCIL_STATE | BLEND_STATE | FRAGMENT_STATE,  ColorMode::WRITE_RGBA, DepthMode::WRITE, StencilMode::DEFAULT, BlendMode::ALPHA_BLENDING, WGPUTextureFormat_RGBA16Float, WGPUCullMode_Undefined }
     );
 
     wgpContext.addSahderModule("COMPUTE", "shader/deferred_compute.wgsl");

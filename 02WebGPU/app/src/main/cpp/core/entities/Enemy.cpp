@@ -1,7 +1,7 @@
 #include <glm/gtx/norm.hpp>
 #include "Enemy.h"
 
-Enemy::Enemy(btCollisionObject* collisionObject, const glm::vec3& target) : CollisionNode(collisionObject), target(target){
+Enemy::Enemy(btCollisionObject* collisionObject, const glm::vec3& target) : CollisionNode(collisionObject), target(target), m_isDeath(false){
     m_collisionObject->setUserPointer(this);
 }
 
@@ -9,15 +9,14 @@ Enemy::~Enemy() {
 
 }
 
-void Enemy::update(const float dt) {
+void Enemy::update(float dt) {
     const float monsterSpeed = 0.6f;
     float distanceSq = glm::length2(target - getPosition());
 
     if (distanceSq < 0.35f)
         return;
 
-    glm::quat rot = glm::quat(glm::vec3(0.0f, getLookAtYRotation(getPosition(), target), 0.0f));
-    setOrientation(rot);
+    setOrientation(glm::quat(glm::vec3(0.0f, getLookAtYRotation(getPosition(), target), 0.0f)));
     translateRelative(glm::vec3(0.0f, 0.0f, 1.0f) * dt * monsterSpeed);
 }
 
@@ -32,10 +31,22 @@ void Enemy::fixedUpdate(float fdt) {
 
 float Enemy::getLookAtYRotation(const glm::vec3& objectPos, const glm::vec3& targetPos) {
     float dx = targetPos[0] - objectPos[0];
-	float dz = targetPos[2] - objectPos[2];
+    float dz = targetPos[2] - objectPos[2];
 
-	if (abs(dx) < 0.01f && abs(dz) < 0.01f)
-		return 0.0f;
+    if (abs(dx) < 0.01f && abs(dz) < 0.01f)
+        return 0.0f;
 
-	return std::atan2(dx, dz);
+    return std::atan2(dx, dz);
+}
+
+const glm::vec3 Enemy::getDirection() const {
+    return getOrientation() * glm::vec3(0.0f, 0.0f, 1.0f);
+}
+
+void Enemy::setIsDeath(bool isDeath) {
+    m_isDeath = true;
+}
+
+bool Enemy::isDeath() {
+    return m_isDeath;
 }

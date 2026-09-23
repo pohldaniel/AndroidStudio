@@ -56,9 +56,11 @@ fn vs_main(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) ins
 	
 	let viewPosition = uniforms.view * vec4f(instance.position, 1.0);
 	let billboardedViewPos = vec4f(viewPosition.xy + localPos, viewPosition.zw);
+	//let billboardedViewPos = vec4f(viewPosition.x + localPos.x, viewPosition.y + localPos.y, viewPosition.z, viewPosition.w);
 	out.position = uniforms.projection * billboardedViewPos;
 	
 	let frameIndex = u32(instance.currentFrame);
+    //let sizePerFrame = vec2f(1.0 / 6.0, 1.0); 
 	let cols = u32(info.colRow.x);
     let uvOffset = vec2f(f32(frameIndex % cols), f32(frameIndex / cols)) * info.frameSize;
     out.texcoord = uvOffset + (uvs[vertexIndex] * info.frameSize);
@@ -68,5 +70,6 @@ fn vs_main(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) ins
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+	//return vec4f(in.texcoord, 0.0, 1.0);
 	return textureSample(texture, smplr, in.texcoord);
 }
