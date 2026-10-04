@@ -538,13 +538,13 @@ void WgpTexture::loadCubeFromFiles(std::string* fileNames, bool flipVertical) {
     m_textureView = wgpCreateTextureView(m_texture, WGPUTextureAspect::WGPUTextureAspect_All);
 }
 
-void WgpTexture::createEmpty(uint32_t width, uint32_t height, uint32_t depth, WGPUTextureUsage textureUsage, WGPUTextureFormat textureFormat, uint32_t mipLevelCount, uint32_t msaaSampleCount) {
+void WgpTexture::createEmpty(uint32_t width, uint32_t height, uint32_t depth, WGPUTextureUsage textureUsage, WGPUTextureFormat textureFormat, uint32_t mipLevelCount, uint32_t msaaSampleCount, bool isArray) {
     m_width = width;
     m_height = height;
     m_channels = 4u;
     m_format = textureFormat;
     m_texture = wgpCreateTexture(m_width, m_height, depth, textureUsage, m_format, mipLevelCount, msaaSampleCount);
-    m_textureView = wgpCreateTextureView(m_texture, WGPUTextureAspect::WGPUTextureAspect_All);
+    m_textureView = wgpCreateTextureView(m_texture, WGPUTextureAspect::WGPUTextureAspect_All, isArray);
 }
 
 void WgpTexture::resize(uint32_t width, uint32_t height) {
