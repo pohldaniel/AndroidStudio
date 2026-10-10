@@ -42,9 +42,9 @@ public:
 	void applyBindPose(bool onTransformChanged = false);
 	void cleanup();
 
+	void loadModel(const std::vector<std::string>& filePaths, short addVirtualRoots = 0);
 	void loadModelAssimp(const std::string& path, short addVirtualRoots = 0, bool reverseBoneList = false);
-	void loadModel(const std::string& path, short addVirtualRoots = 0);
-	
+
 	void rotate(float pitch, float yaw, float roll);
 	void scale(float sx, float sy, float sz);
 	void translate(float dx, float dy, float dz);

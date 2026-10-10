@@ -84,12 +84,12 @@ void AnimatedModel::OnAnimationOrderChanged() {
 	m_animationOrderDirty = true;
 }
 
-void AnimatedModel::loadModel(const std::string& path, short addVirtualRoots) {
+void AnimatedModel::loadModel(const std::vector<std::string>& filePaths, short addVirtualRoots) {
 	Utils::MdlcIO mdlcIO;
 
 	m_meshes.push_back(new AnimatedMesh(this));
 	AnimatedMesh* mesh = static_cast<AnimatedMesh*>(m_meshes.back());
-	mdlcIO.mdlcModelToBuffer(path.c_str(), mesh->vertexBuffer(), mesh->indexBuffer(), mesh->stride(), mesh->weights(), mesh->joints(), mesh->boneDescriptions());
+	mdlcIO.mdlcMeshToBuffer(filePaths[0].c_str(), mesh->vertexBuffer(), mesh->indexBuffer(), mesh->stride(), mesh->weights(), mesh->joints(), mesh->boneDescriptions());
 
 	if (addVirtualRoots) {
 
@@ -117,6 +117,12 @@ void AnimatedModel::loadModel(const std::string& path, short addVirtualRoots) {
 		}
 	}
 	mesh->createBones();
+
+	for (size_t index = 1u; index < filePaths.size(); ++index) {
+		m_meshes.emplace_back(new AnimatedMesh(this));
+		mesh = static_cast<AnimatedMesh*>(m_meshes.back());
+		mdlcIO.mdlcMeshToBuffer(filePaths[index].c_str(), mesh->vertexBuffer(), mesh->indexBuffer(), mesh->stride(), mesh->weights(), mesh->joints());
+	}
 }
 
 void AnimatedModel::loadModelAssimp(const std::string& filename, short addVirtualRoots, bool reverseBoneList) {

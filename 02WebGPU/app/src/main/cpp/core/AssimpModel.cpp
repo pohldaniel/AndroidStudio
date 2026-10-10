@@ -1,5 +1,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "BinaryIO.h"
 #include "AssimpModel.h"
 #include "AssetIO.h"
 
@@ -17,8 +18,6 @@ AssimpModel::AssimpModel() {
 	m_numberOfTriangles = 0u;
 	m_numberOfMeshes = 0u;
 	m_stride = 0u;
-
-	m_drawCount = 0u;
 }
 
 AssimpModel::AssimpModel(AssimpModel const& rhs) {
@@ -33,7 +32,6 @@ AssimpModel::AssimpModel(AssimpModel const& rhs) {
 	m_meshes = rhs.m_meshes;
 	m_modelDirectory = rhs.m_modelDirectory;
 	m_center = rhs.m_center;
-	m_drawCount = rhs.m_drawCount;
 }
 
 AssimpModel::AssimpModel(AssimpModel&& rhs) noexcept {
@@ -48,7 +46,6 @@ AssimpModel::AssimpModel(AssimpModel&& rhs) noexcept {
 	m_meshes = rhs.m_meshes;
 	m_modelDirectory = rhs.m_modelDirectory;
 	m_center = rhs.m_center;
-	m_drawCount = rhs.m_drawCount;
 }
 
 AssimpModel& AssimpModel::operator=(const AssimpModel& rhs) {
@@ -63,7 +60,6 @@ AssimpModel& AssimpModel::operator=(const AssimpModel& rhs) {
 	m_meshes = rhs.m_meshes;
 	m_modelDirectory = rhs.m_modelDirectory;
 	m_center = rhs.m_center;
-	m_drawCount = rhs.m_drawCount;
 	return *this;
 }
 
@@ -79,7 +75,6 @@ AssimpModel& AssimpModel::operator=(AssimpModel&& rhs) noexcept {
 	m_meshes = rhs.m_meshes;
 	m_modelDirectory = rhs.m_modelDirectory;
 	m_center = rhs.m_center;
-	m_drawCount = rhs.m_drawCount;
 	return *this;
 }
 
@@ -164,7 +159,7 @@ const std::vector<unsigned int>& AssimpModel::getIndexBuffer() const {
 }
 
 unsigned int AssimpModel::getNumberOfTriangles() const {
-	return m_drawCount / 3;
+	return m_indexBuffer.size() / 3u;
 }
 
 void AssimpModel::generateNormals() {
@@ -217,11 +212,18 @@ void AssimpModel::packBuffer() {
 	}
 }
 
-void AssimpModel::loadModel(const char* filename, bool isStacked, bool generateNormals, bool generateTangents, bool flipYZ, bool flipWinding) {
-	loadModelCpu(filename, isStacked, generateNormals, generateTangents, flipYZ, flipWinding);
+void AssimpModel::loadModel(const char* filename) {
+	Utils::MdlcIO mdlcIO;
+
+	m_meshes.emplace_back(new AssimpMesh(this));
+	AssimpMesh* mesh = static_cast<AssimpMesh*>(m_meshes.back());
+	mdlcIO.mdlcMeshToBuffer(filename, mesh->vertexBuffer(), mesh->indexBuffer(), mesh->stride());
+	mesh->m_hasTextureCoords = true;
+	mesh->m_hasNormals = true;
+	m_numberOfMeshes = m_meshes.size();
 }
 
-void AssimpModel::loadModelCpu(const char* filename, bool isStacked, bool generateNormals, bool generateTangents, bool flipYZ, bool flipWinding) {
+void AssimpModel::loadModelAssimp(const char* filename, bool isStacked, bool generateNormals, bool generateTangents, bool flipYZ, bool flipWinding) {
 	std::string flnm(filename);
 
 	const size_t index = flnm.rfind('/');
@@ -597,6 +599,18 @@ void AssimpMesh::setTextureIndex(short index) const {
 
 const Material& AssimpMesh::getMaterial() const {
 	return Material::GetMaterials()[m_materialIndex];
+}
+
+std::vector<float>& AssimpMesh::vertexBuffer() const {
+	return m_vertexBuffer;
+}
+
+std::vector<unsigned int>& AssimpMesh::indexBuffer() const {
+	return m_indexBuffer;
+}
+
+unsigned int& AssimpMesh::stride() const {
+	return m_stride;
 }
 
 const std::unordered_map<TextureSlot, std::pair<unsigned char*, unsigned int>>& AssimpMesh::getEmbeddedTextures() const {

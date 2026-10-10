@@ -103,8 +103,8 @@ public:
 	AssimpModel& operator=(AssimpModel&& rhs) noexcept;
 	~AssimpModel() override;
 
-	void loadModel(const char* filename, bool isStacked = false, bool generateNormals = false, bool generateTangents = false, bool flipYZ = false, bool flipWinding = false);
-	void loadModelCpu(const char* filename, bool isStacked = false, bool generateNormals = false, bool generateTangents = false, bool flipYZ = false, bool flipWinding = false);
+	void loadModel(const char* filename);
+	void loadModelAssimp(const char* filename, bool isStacked = false, bool generateNormals = false, bool generateTangents = false, bool flipYZ = false, bool flipWinding = false);
 
 	void scale(float sx, float sy, float sz);
 	void scale(float s);
@@ -138,7 +138,6 @@ private:
 
 	std::string m_modelDirectory;
 	glm::vec3 m_center;
-	unsigned int m_drawCount;
 
 	std::vector<float> m_vertexBuffer;
 	std::vector<unsigned int> m_indexBuffer;
@@ -166,6 +165,11 @@ public:
 	void setTextureIndex(short index) const;
 
 	const Material& getMaterial() const;
+
+	std::vector<float>& vertexBuffer() const;
+	std::vector<unsigned int>& indexBuffer() const;
+	unsigned int& stride() const;
+
 	void cleanup();
 
 	const std::unordered_map<TextureSlot, std::pair<unsigned char*, unsigned int>>& getEmbeddedTextures() const;

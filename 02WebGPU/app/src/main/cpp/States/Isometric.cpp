@@ -54,46 +54,21 @@ Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC),
     m_floor.buildQuadXZ({-50.0f, 0.0f, -50.0f}, {100.0f, 100.0f});
     m_floor.rotate(0.0f, 45.0f, 0.0f);
     m_bullet.buildQuadXZ({ -0.3f * 0.243f, 0.0f, -0.3f * 0.243f }, { 0.3f * 0.5f, 0.3f * 0.5f }, 1u, 1u, true, false);
+    m_rotationButtonResult.degrees = glm::degrees(aimTheta);
 
-    AnimationManager::Get().getAnimation("full").loadAnimationAssimp("models/player/Player.fbx", "Player", "full", 0u, 245u);
-    AnimationManager::Get().getAnimation("idle").loadAnimationAssimp("models/player/Player.fbx", "Player", "idle", 5u, 81u);
-    AnimationManager::Get().getAnimation("forward").loadAnimationAssimp("models/player/Player.fbx", "Player", "forward", 85u, 105u);
-    AnimationManager::Get().getAnimation("backward").loadAnimationAssimp("models/player/Player.fbx", "Player", "backward", 110u, 130u);
-    AnimationManager::Get().getAnimation("backward").shift(10u);
-    AnimationManager::Get().getAnimation("right").loadAnimationAssimp("models/player/Player.fbx", "Player", "right", 135u, 155u);
-    AnimationManager::Get().getAnimation("right").shift(10u);
-    AnimationManager::Get().getAnimation("left").loadAnimationAssimp("models/player/Player.fbx", "Player", "left", 160u, 180u);
-    AnimationManager::Get().getAnimation("death").loadAnimationAssimp("models/player/Player.fbx", "Player", "death", 185u, 244u);
+    m_enemy.loadModel("models/EelDog/eel_dog.mdlc");
 
-    m_player.loadModelAssimp("models/player/Player.fbx", 1u);
-    m_player.scale(0.0044f, 0.0044f, 0.0044f);
-    m_rotationButtonResult.degrees = 90.0f;
+    AnimationManager::Get().getAnimation("idle").loadAnimation("models/player/idle.anic");
+    AnimationManager::Get().getAnimation("forward").loadAnimation("models/player/forward.anic");
+    AnimationManager::Get().getAnimation("backward").loadAnimation("models/player/backward.anic");
+    AnimationManager::Get().getAnimation("backward").shift(8u);
+    AnimationManager::Get().getAnimation("right").loadAnimation("models/player/right.anic");
+    AnimationManager::Get().getAnimation("right").shift(8u);
+    AnimationManager::Get().getAnimation("left").loadAnimation("models/player/left.anic");
+    AnimationManager::Get().getAnimation("death").loadAnimation("models/player/death.anic");
 
-    m_enemy.loadModel("models/EelDog/EelDog.fbx");
-    m_enemy.rotate(90.0f, 0.0f, 0.0f);
-    m_enemy.scale(0.01f);
-
-    Material::CleanupMaterials();
-    static_cast<const AssimpMesh*>(m_enemy.getMesh())->setMaterialIndex(-1);
-
-    AnimatedMesh* mesh = static_cast<AnimatedMesh*>(m_player.mesh());
-    mesh->boneDescriptions().emplace_back();
-    mesh->boneDescriptions().back().name = "Gun_$AssimpFbx$_Rotation";
-    mesh->boneDescriptions().back().parentIndex = -1;
-    mesh->boneDescriptions().back().offsetMatrix = invPivot;
-
-    mesh->boneDescriptions().emplace_back();
-    mesh->boneDescriptions().back().name = "Gun_$AssimpFbx$_Translation";
-    mesh->boneDescriptions().back().parentIndex = 0;
-    mesh->boneDescriptions().back().offsetMatrix = offset * pivot;
-
-    mesh->createBones();
-
-    mesh = static_cast<AnimatedMesh*>(m_player.mesh(1u));
-    for (size_t index = 0u; index < mesh->getVertexBuffer().size() / mesh->getStride(); index++) {
-        mesh->weights().push_back({ 1.0f, 0.0f, 0.0f, 0.0f });
-        mesh->joints().push_back({ 42u, 0u, 0u, 0u });
-    }
+    m_player.loadModel({"models/player/player.mdlc", "models/player/gun.mdlc"});
+    m_player.scale(0.44f, 0.44f, 0.44f);
 
     m_player.addAnimationState(AnimationManager::Get().getAnimation("forward"));
     m_player.getAnimationState(0u)->setLooped(true);
@@ -396,7 +371,7 @@ void Isometric::update() {
     if (!m_isDeath && m_rotationButtonResult.buttonDown && (lastFireTime + 0.1f) < Clock()) {
         const glm::quat midOri = m_player.getOrientation();
         const glm::mat4 playerModelTransform = m_player.getWorldTransformation();
-        const glm::vec3 projectileSpawnPoint = playerModelTransform * glm::vec4(-20.0f, 120.0f, 100.0f, 1.0f);
+        const glm::vec3 projectileSpawnPoint = playerModelTransform * glm::vec4(-20.0f * 0.01f, 120.0f * 0.01f, 100.0f * 0.01f, 1.0f);
 
         m_bulletStore.createBullets(projectileSpawnPoint, midOri, m_spreadAmount);
         lastFireTime = Clock();
@@ -506,10 +481,9 @@ void Isometric::update() {
     updateBillboards(m_dt);
 
     const AnimatedMesh* mesh = static_cast<const AnimatedMesh*>(m_player.getMesh());
-    mesh->skinMatrices()[42] = mesh->getBone(43u).getWorldTransformation() * offset * pivot * mesh->skinMatrices()[42];
     wgpuQueueWriteBuffer(wgpContext.queue, m_skinBuffer.getBuffer(), 0u, mesh->getSkinMatrices(), mesh->getNumBones() * sizeof(glm::mat4));
 
-    glm::mat4 muzzleTransform = mesh->skinMatrices()[42] * glm::translate(glm::vec3(214.0f, 76.143f, -3.054f));
+    glm::mat4 muzzleTransform = mesh->skinMatrices()[42] * glm::translate(glm::vec3(221.0f * 0.01f, 76.143f * 0.01f, -3.054f * 0.01f));
     updateMuzzle(m_dt, muzzleTransform[3][0], muzzleTransform[3][1], muzzleTransform[3][2]);
 
     float angle = aimTheta;
@@ -519,7 +493,7 @@ void Isometric::update() {
     float finalCorrectionAngle = 90.0f * std::abs(std::cos(radians));
     float sign = (angle > 0.0f && angle < 180.0f) ? -1.0f : 1.0f;
 
-    muzzleTransform = muzzleTransform * glm::scale(glm::vec3(100.0f, 100.0f, 100.0f)) * glm::rotate(glm::radians(sign * finalCorrectionAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+    muzzleTransform = muzzleTransform * glm::rotate(glm::radians(sign * finalCorrectionAngle), glm::vec3(1.0f, 0.0f, 0.0f));
 
     m_uniforms.projection = m_camera.getPerspectiveMatrix();
     m_uniforms.view = m_camera.getViewMatrix();
