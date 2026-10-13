@@ -24,8 +24,7 @@
 #include <core/TrackBall.h>
 #include <core/Transform.h>
 
-#include "bullet_store.h"
-#include "enemy_spawner.h"
+#include "BulletStore.h"
 
 struct BulletCollisionCallback : public btCollisionWorld::ContactResultCallback {
     bool m_hasCollided = false;
@@ -103,9 +102,6 @@ public:
 
     void OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor);
     void OnPostDraw();
-    void OnDrawShadow(const WGPURenderPassEncoder& renderPassEncoder);
-    void OnDrawEmission(const WGPURenderPassEncoder& renderPassEncoder);
-    void OnDrawScene(const WGPURenderPassEncoder& renderPassEncoder);
     void OnFillBuffer(nk_context& nkCntxt);
     void OnButton(const Event::MouseButtonEvent& event) override;
 
@@ -139,12 +135,13 @@ private:
     WGPUBindGroup createBindGroupBlurH();
     WGPUBindGroup createBindGroupBlurV();
 
-    CollisionEntity* createNewBulletToPool();
-
+    float getLookAtYRotation(const glm::vec3& objectPos, const glm::vec3& targetPos);
     void spawnBillboard(const glm::vec3& position);
     void resetMuzzle();
+    void spawnEnemy(const glm::vec3& pos);
     void updateBillboards(float dt);
     void updateMuzzle(float dt, float x, float y, float z);
+    void updateSpawn(float dt, const glm::vec3& pos);
 
     bool m_isDeath = false;
     bool m_wantResize = false;
@@ -156,6 +153,7 @@ private:
     RotationButtonResult m_rotationButtonResult;
     Wiggly m_wiggly;
     BulletStore m_bulletStore;
+    ThreadPool m_threadPool;
     SoundEffect m_fire, m_ding;
     SceneNode* m_scene;
 
@@ -186,8 +184,12 @@ private:
     float aimTheta = 0.0f;
     float lastFireTime = 0.0f;
     int m_spreadAmount = 20;
+    const float enemySpawnInterval = 1.0f;
+    const int spawnsPerInterval = 1;
+    const float spawnRadius = 10.0f;
+    float m_countdown = 1.0f;
+    size_t m_count = 0;
 
-    EnemySpawner m_enemySpawner;
     std::vector<CollisionEntity*> m_entities;
     Player* m_playerEntity;
     std::vector<Enemy*> m_enemies;

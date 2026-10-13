@@ -9,39 +9,20 @@
 
 #include <entities/Enemy.h>
 
-#include "aabb.h"
-#include "bullet_store.h"
+#include "AABB.h"
+#include "BulletStore.h"
 
 namespace {
 
 
-const float pi = (float)M_PI;
-const float rotPerBullet = 3.0f * pi / 180.0f;
+    const float rotPerBullet = 3.0f * glm::pi<float>() / 180.0f;
+    const float bulletLifetime = 1.0f;
+    const float bulletSpeed = 15.0f;
 
-glm::quat partialHamiltonProduct2(const glm::quat& q1, const glm::vec3& q2) {
-  return glm::quat{
-    - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z,
-    q1.w * q2.x + q1.y * q2.z - q1.z * q2.y,
-    q1.w * q2.y - q1.x * q2.z + q1.z * q2.x,
-    q1.w * q2.z + q1.x * q2.y - q1.y * q2.x};
-}
+    const float bulletEnemyMaxCollisionDist = 0.3f / 2 + 0.03f + 0.4f / 2 + 0.08f;
+    const float bulletEnemyMaxCollisionDist2 = bulletEnemyMaxCollisionDist * bulletEnemyMaxCollisionDist;
 
-glm::vec3 partialHamiltonProduct(const glm::quat& q1, const glm::quat& q2) {
-  return glm::vec3{
-    q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y,
-    q1.w * q2.y - q1.x * q2.z + q1.y * q2.w + q1.z * q2.x,
-    q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w};
-}
-
-const float bulletScale = 0.3f;
-const float bulletLifetime = 1.0f;
-const float bulletSpeed = 15.0f;
-
-
-const float bulletEnemyMaxCollisionDist = 0.3f / 2 + 0.03f + 0.4f / 2 + 0.08f;
-const float bulletEnemyMaxCollisionDist2 = bulletEnemyMaxCollisionDist * bulletEnemyMaxCollisionDist;
-
-float distanceBetweenLineSegments(
+    float distanceBetweenLineSegments(
             const glm::vec3& a0,
             const glm::vec3& a1,
             const glm::vec3& b0,
@@ -60,15 +41,10 @@ float distanceBetweenLineSegments(
         const float cl = glm::length(cross);
         const float denom = cl * cl;
 
-
-        // If lines are parallel (denom=0) test if lines overlap.
-        // If they don't overlap then there is a closest point solution.
-        // If they do overlap, there are infinite closest positions, but there is a closest distance
         if (denom < EPS) {
             const float d0 = glm::dot(_A, (b0 - a0));
             const float d1 = glm::dot(_A, (b1 - a0));
 
-            // Is segment B before A?
             if (d0 <= 0.0f && 0.0f >= d1) {
                 if (abs(d0) < abs(d1)) {
                     return glm::length(a0 - b0);
@@ -82,14 +58,9 @@ float distanceBetweenLineSegments(
                 return glm::length(a1 - b1);
             }
 
-
-            // Segments overlap, return distance between parallel segments
             return glm::length(((d0 * _A) + a0) - b0);
         }
 
-
-
-        // Lines criss-cross: Calculate the projected closest points
         const glm::vec3 t = (b0 - a0);
         const float detA = glm::determinant(glm::mat3(t, _B, cross));
         const float detB = glm::determinant(glm::mat3(t, _A, cross));
@@ -97,10 +68,9 @@ float distanceBetweenLineSegments(
         const float t0 = detA / denom;
         const float t1 = detB / denom;
 
-        glm::vec3 pA = a0 + (_A * t0); // Projected closest point on segment A
-        glm::vec3 pB = b0 + (_B * t1); // Projected closest point on segment B
+        glm::vec3 pA = a0 + (_A * t0);
+        glm::vec3 pB = b0 + (_B * t1);
 
-        // Clamp projections
         if (t0 < 0.0f) {
             pA = a0;
         }
@@ -115,7 +85,6 @@ float distanceBetweenLineSegments(
             pB = b1;
         }
 
-        // Clamp projection A
         if (t0 < 0.0f || t0 > magA) {
             float dot = glm::dot(_B, (pA - b0));
             if (dot < 0.0f) {
@@ -127,7 +96,6 @@ float distanceBetweenLineSegments(
             pB = b0 + (_B * dot);
         }
 
-        // Clamp projection B
         if (t1 < 0.0f || t1 > magB) {
             float dot = glm::dot(_A, (pB - a0));
             if (dot < 0.0f) {
@@ -154,9 +122,7 @@ float distanceBetweenLineSegments(
                         e->getPosition() + e->getDirection() * (0.4f / 2));
         return closestDist <= (0.03f + 0.08f);
     }
-
-}  // namespace
-
+}
 
 void BulletStore::createBullets(const glm::vec3& position, const glm::quat& midOri, const int spreadAmount) {
   const int startIndex = m_offsets.size();
@@ -197,7 +163,7 @@ void BulletStore::createBullets(const glm::vec3& position, const glm::quat& midO
   bulletGroups.push_back(g);
 }
 
-void BulletStore::updateBullets(float deltaTimeSeconds, std::vector<Enemy*>& enemies) {
+void BulletStore::update(float deltaTimeSeconds, std::vector<Enemy*>& enemies) {
 
     const bool useAABB = enemies.size() > 0;
     const int numSubGroups = useAABB ? 9 : 1;

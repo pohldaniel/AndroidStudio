@@ -3,9 +3,10 @@
 #include <vector>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include "ThreadPool.h"
+#include <thread/ThreadPool.h>
 
 class Enemy;
 class BulletStore {
@@ -27,7 +28,7 @@ public:
             : threadPool(_threadPool) {}
 
     void createBullets(const glm::vec3& position, const glm::quat& midOri, const int spreadAmount);
-    void updateBullets(float deltaTimeSeconds, std::vector<Enemy*>& enemies);
+    void update(float deltaTimeSeconds, std::vector<Enemy*>& enemies);
 
     ThreadPool* const threadPool;
     std::vector<BulletGroup> bulletGroups;

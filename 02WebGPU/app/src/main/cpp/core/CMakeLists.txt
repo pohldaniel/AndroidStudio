@@ -9,8 +9,9 @@ add_library(core STATIC ${CORE_SOURCES})
 set(CORE_HEADERS BinaryIO.h AssimpModel.h ObjModel.h Model.h Mesh.h Material.h Camera.h Transform.h Object.h TrackBall.h)
 target_include_directories(core PRIVATE ${CORE_HEADERS})
 
-target_link_libraries(core animation scene entities)
+target_link_libraries(core animation scene entities thread)
 
 add_subdirectory(animation)
 add_subdirectory(scene)
 add_subdirectory(entities)
+add_subdirectory(thread)

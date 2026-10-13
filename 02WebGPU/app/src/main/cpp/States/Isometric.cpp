@@ -21,24 +21,7 @@
 #include "Globals.h"
 #include "DeltaClock.h"
 
-glm::mat4 offset = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
-                             0.0f, 1.0f, 0.0f, 0.0f,
-                             0.0f, 0.0f, 1.0f, 0.0f,
-                             -156.85f, -32.2427f, 144.702f, 1.0f);
-
-glm::mat4 pivot = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
-                            0.0f, 1.0f, 0.0f, 0.0f,
-                            0.0f, 0.0f, 1.0f, 0.0f,
-                            130.762f, 70.4033f, -3.52485f, 1.0f);
-
-glm::mat4 invPivot = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
-                               0.0f, 1.0f, 0.0f, 0.0f,
-                               0.0f, 0.0f, 1.0f, 0.0f,
-                               -130.762f, -70.4033f, 3.52485f, 1.0f);
-
-ThreadPool threadPool(4);
-
-Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC), m_bulletStore(&threadPool), m_enemySpawner(120.0f * 0.0044f, m_player) {
+Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC), m_bulletStore(&m_threadPool), m_threadPool(4) {
     wgpSetSurfaceDepthFormat(WGPUTextureFormat::WGPUTextureFormat_Depth24Plus);
 
     nkInit(static_cast<float>(wgpWidth), static_cast<float>(wgpHeight));
@@ -271,7 +254,7 @@ Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC),
     m_scene->setOnChildAdded([this](Node* newNode) {
         if (auto* enemy = dynamic_cast<Enemy*>(newNode)) {
             m_enemies.push_back(enemy);
-            m_enemySpawner.count()++;
+            m_count++;
         }
     });
 
@@ -280,11 +263,9 @@ Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC),
         if (it != m_enemies.end()) {
             std::iter_swap(it, m_enemies.end() - 1);
             m_enemies.pop_back();
-            m_enemySpawner.count()--;
+            m_count--;
         }
     });
-
-    m_enemySpawner.scene = m_scene;
 
     btCollisionObject* body = Physics::AddKinematicObject(Physics::BtTransform(glm::vec3(0.0f, 0.4f, 0.0f)), new btCylinderShape(btVector3(0.35f * 0.5f, 0.4f, 0.35f * 0.5f)), Physics::collisiontypes::CHARACTER, Physics::collisiontypes::ENEMY);
     m_playerEntity = m_scene->addChild<Player>(body, m_player);
@@ -473,8 +454,9 @@ void Isometric::update() {
 
     m_player.update(m_dt);
     m_player.updateSkinning();
-    m_bulletStore.updateBullets(m_dt, m_enemies);
-    m_enemySpawner.update(posistion, m_dt);
+    m_bulletStore.update(m_dt, m_enemies);
+    updateSpawn(m_dt, posistion);
+
     for (auto enemy : m_enemies) {
         enemy->update(m_dt);
     }
@@ -543,15 +525,60 @@ void Isometric::render() {
 void Isometric::OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor) {
 
     {
-        WgpRenderer::Draw(m_wgpEmissionTarget, m_wgpEmissionDepth, std::bind(&Isometric::OnDrawEmission, this, std::placeholders::_1));
+        WgpRenderer::Draw(m_wgpEmissionTarget, m_wgpEmissionDepth, [this](const WGPURenderPassEncoder& renderPassEncoder) {
+            wgpContext.setClearColor({ 0.0f, 0.0f, 0.0f, 0.0f });
+
+            wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_PLAYER_EMISSION"));
+            m_wgpPlayer.setBindGroupsSlot("EMISSION");
+            m_wgpPlayer.draw(renderPassEncoder);
+
+            wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_FLOOR_EMISSION"));
+            m_wgpFloor.setBindGroupsSlot("EMISSION");
+            m_wgpFloor.draw(renderPassEncoder);
+
+            wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_BULLET_EMISSION"));
+            m_wgpBullet.draw(renderPassEncoder, m_bulletStore.m_rots.size());
+
+            m_wgpFloor.setBindGroupsSlot("BG");
+            wgpContext.setClearColor({ 0.0f, 0.0f, 0.0f, 1.0f });
+        });
     }
 
     {
-        WgpRenderer::DrawDepth(m_wgpTextureShadow, std::bind(&Isometric::OnDrawShadow, this, std::placeholders::_1));
+        WgpRenderer::DrawDepth(m_wgpTextureShadow, [this](const WGPURenderPassEncoder& renderPassEncoder) {
+            wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_PLAYER_SHADOW"));
+            m_wgpPlayer.setBindGroupsSlot("SHADOW");
+            m_wgpPlayer.draw(renderPassEncoder);
+
+            wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_WIGGLY_SHADOW"));
+            m_wgpEnemy.setBindGroupsSlot("SHADOW");
+            m_wgpEnemy.draw(renderPassEncoder, m_cpuInstanceBuffer.size());
+
+
+            m_wgpEnemy.setBindGroupsSlot("BG");
+            m_wgpPlayer.setBindGroupsSlot("BG");
+        });
     }
 
     {
-        WgpRenderer::Draw(m_wgpSceneTarget, m_wgpSceneDepth, std::bind(&Isometric::OnDrawScene, this, std::placeholders::_1));
+        WgpRenderer::Draw(m_wgpSceneTarget, m_wgpSceneDepth, [this](const WGPURenderPassEncoder& renderPassEncoder) {
+            wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_FLOOR"));
+            m_wgpFloor.draw(renderPassEncoder);
+
+            wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_WIGGLY"));
+            m_wgpEnemy.draw(renderPassEncoder, m_cpuInstanceBuffer.size());
+
+            wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_ANIMATION"));
+            m_wgpPlayer.draw(renderPassEncoder);
+
+            wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_BILLBOARD"));
+            wgpuRenderPassEncoderSetBindGroup(renderPassEncoder, 0u, m_bindGroupBillboard, 0u, NULL);
+            wgpuRenderPassEncoderDraw(renderPassEncoder, 4u, m_activeBillboards.size(), 0u, 0u);
+
+            wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_MUZZLE"));
+            wgpuRenderPassEncoderSetBindGroup(renderPassEncoder, 0u, m_bindGroupMuzzle, 0u, NULL);
+            wgpuRenderPassEncoderDraw(renderPassEncoder, 4u, 1u, 0u, 0u);
+        });
     }
 
     {
@@ -660,17 +687,14 @@ void Isometric::OnButton(const Event::MouseButtonEvent& event) {
     }
 }
 
-CollisionEntity* Isometric::createNewBulletToPool() {
-    btTransform startTransform;
-    startTransform.setIdentity();
+float Isometric::getLookAtYRotation(const glm::vec3& objectPos, const glm::vec3& targetPos) {
+    float dx = targetPos[0] - objectPos[0];
+    float dz = targetPos[2] - objectPos[2];
 
-    btCollisionObject* body = Physics::AddKinematicObject(startTransform, new btCapsuleShapeX(0.03f, 0.3f), Physics::collisiontypes::SPHERE, Physics::collisiontypes::ENEMY);
+    if (abs(dx) < 0.01f && abs(dz) < 0.01f)
+        return 0.0f;
 
-    CollisionEntity* entity = m_scene->addChildSilent<CollisionEntity>(body);
-    entity->setActive(false);
-    m_entities.push_back(entity);
-
-    return entity;
+    return glm::degrees(std::atan2(dx, dz));
 }
 
 void Isometric::spawnBillboard(const glm::vec3& position) {
@@ -697,6 +721,23 @@ void Isometric::resetMuzzle() {
         m_muzzleInstance.currentFrame = 0u;
         m_muzzleInstance.age = 0.0f;
     }
+}
+
+void Isometric::spawnEnemy(const glm::vec3& pos) {
+    if (m_count > 20u)
+        return;
+
+    const float theta = glm::radians((float)(rand() % 360));
+    const float x = pos[0] + sin(theta) * spawnRadius;
+    const float z = pos[2] + cos(theta) * spawnRadius;
+
+    glm::vec3 spawnPos(x, 120.0f * 0.0044f, z);
+    glm::quat rot = glm::quat(glm::vec3(0.0f, getLookAtYRotation(pos, spawnPos), 0.0f));
+
+    btCollisionObject* body = Physics::AddKinematicObject(Physics::BtTransform(spawnPos, rot), new btCapsuleShapeZ(0.08f, 0.4f), Physics::collisiontypes::ENEMY, Physics::collisiontypes::SPHERE | Physics::collisiontypes::CHARACTER);
+    Enemy* enemy = m_scene->addChild<Enemy>(body, pos);
+    enemy->setPosition(spawnPos);
+    enemy->setOrientation(rot);
 }
 
 void Isometric::updateBillboards(float dt) {
@@ -760,55 +801,14 @@ void Isometric::updateMuzzle(float dt, float x, float y, float z) {
     }
 }
 
-void Isometric::OnDrawShadow(const WGPURenderPassEncoder& renderPassEncoder) {
-    wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_PLAYER_SHADOW"));
-    m_wgpPlayer.setBindGroupsSlot("SHADOW");
-    m_wgpPlayer.draw(renderPassEncoder);
-
-    wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_WIGGLY_SHADOW"));
-    m_wgpEnemy.setBindGroupsSlot("SHADOW");
-    m_wgpEnemy.draw(renderPassEncoder, m_cpuInstanceBuffer.size());
-
-
-    m_wgpEnemy.setBindGroupsSlot("BG");
-    m_wgpPlayer.setBindGroupsSlot("BG");
-}
-
-void Isometric::OnDrawEmission(const WGPURenderPassEncoder& renderPassEncoder) {
-    wgpContext.setClearColor({ 0.0f, 0.0f, 0.0f, 0.0f });
-
-    wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_PLAYER_EMISSION"));
-    m_wgpPlayer.setBindGroupsSlot("EMISSION");
-    m_wgpPlayer.draw(renderPassEncoder);
-
-    wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_FLOOR_EMISSION"));
-    m_wgpFloor.setBindGroupsSlot("EMISSION");
-    m_wgpFloor.draw(renderPassEncoder);
-
-    wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_BULLET_EMISSION"));
-    m_wgpBullet.draw(renderPassEncoder, m_bulletStore.m_rots.size());
-
-    m_wgpFloor.setBindGroupsSlot("BG");
-    wgpContext.setClearColor({ 0.0f, 0.0f, 0.0f, 1.0f });
-}
-
-void Isometric::OnDrawScene(const WGPURenderPassEncoder& renderPassEncoder) {
-    wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_FLOOR"));
-    m_wgpFloor.draw(renderPassEncoder);
-
-    wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_WIGGLY"));
-    m_wgpEnemy.draw(renderPassEncoder, m_cpuInstanceBuffer.size());
-
-    wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_ANIMATION"));
-    m_wgpPlayer.draw(renderPassEncoder);
-
-    wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_BILLBOARD"));
-    wgpuRenderPassEncoderSetBindGroup(renderPassEncoder, 0u, m_bindGroupBillboard, 0u, nullptr);
-    wgpuRenderPassEncoderDraw(renderPassEncoder, 4u, m_activeBillboards.size(), 0u, 0u);
-
-    wgpuRenderPassEncoderSetPipeline(renderPassEncoder, wgpContext.renderPipelines.at("RP_MUZZLE"));
-    wgpuRenderPassEncoderSetBindGroup(renderPassEncoder, 0u, m_bindGroupMuzzle, 0u, nullptr);
-    wgpuRenderPassEncoderDraw(renderPassEncoder, 4u, 1u, 0u, 0u);
+void Isometric::updateSpawn(float dt, const glm::vec3& pos) {
+    m_countdown -= dt;
+    if (m_countdown <= 0.0f) {
+        for (int i = 0; i < spawnsPerInterval; ++i) {
+            spawnEnemy(pos);
+        }
+        m_countdown += enemySpawnInterval;
+    }
 }
 
 std::vector<WGPUBindGroupLayout> Isometric::OnBindGroupLayouts() {
