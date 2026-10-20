@@ -52,6 +52,7 @@ public:
 
 	void setScale(float sx, float sy, float sz);
 	void setOrientation(float pitch, float yaw, float roll);
+	void setOrientation(glm::quat orientation);
 	void setHasAnimationController(bool hasAnimationController);
 
 	const glm::quat& getOrientation() const;
@@ -114,6 +115,7 @@ public:
 
 	void setScale(float sx, float sy, float sz);
 	void setOrientation(float pitch, float yaw, float roll);
+	void setOrientation(glm::quat orientation);
 
     const std::vector<BoneDescription>& getBoneDescriptions() const;
 	const std::vector<std::array<float, 4>>& getWeights() const;
