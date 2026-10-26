@@ -862,10 +862,29 @@ WGPUTextureFormat wgpMatchingFormat(WGPUSurfaceCapabilities& surfaceCapabilities
     return surfaceCapabilities.formats[0];
 }
 
+void wgpProcessQueue() {
+    if (!wgpContext.device || !wgpContext.queue || !wgpContext.instance) return;
+
+    std::atomic<bool> done{ false };
+    WGPUQueueWorkDoneCallbackInfo callbackInfo = {};
+    callbackInfo.mode = WGPUCallbackMode_AllowProcessEvents;
+    callbackInfo.callback = [](WGPUQueueWorkDoneStatus status, WGPUStringView message, void* userdata1, void* userdata2) {
+        auto* flag = static_cast<std::atomic<bool>*>(userdata1);
+        flag->store(true);
+    };
+    callbackInfo.userdata1 = &done;
+
+    wgpuQueueOnSubmittedWorkDone(wgpContext.queue, callbackInfo);
+    while(!done.load()) {
+        wgpuInstanceProcessEvents(wgpContext.instance);
+    }
+}
+
 void wgpSetSurfaceColorFormat(WGPUTextureFormat textureFormat, const std::function<void()>& onSurfaceChange) {
     if (wgpContext.surface) {
         wgpContext.colorFormat = wgpMatchingFormat(wgpContext.surfaceCapabilities, textureFormat);
         wgpContext.config.format = wgpContext.colorFormat;
+        wgpProcessQueue();
         wgpuSurfaceConfigure(wgpContext.surface, &wgpContext.config);
 
         if (wgpContext.msaaSampleCount > 1u) {
