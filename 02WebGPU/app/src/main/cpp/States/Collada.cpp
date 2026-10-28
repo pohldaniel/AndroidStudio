@@ -1,6 +1,6 @@
 #include <WebGPU/WgpContext.h>
 #include <States/Wireframe.h>
-#include <States/Controller.h>
+#include <States/HDRBloom.h>
 
 #include "Collada.h"
 
@@ -87,7 +87,7 @@ void Collada::OnButton(const Event::MouseButtonEvent& event) {
     m_isRunning = false;
 
     if(event.button == Event::MouseButtonEvent::BUTTON_LEFT){
-        m_machine.addStateAtBottom(new Controller(m_machine));
+        m_machine.addStateAtBottom(new HDRBloom(m_machine));
     }
 
     if(event.button == Event::MouseButtonEvent::BUTTON_RIGHT){

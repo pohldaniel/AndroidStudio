@@ -1,6 +1,6 @@
 #include <WebGPU/WgpContext.h>
 
-#include <States/Collada.h>
+#include <States/HDRBloom.h>
 #include <States/Isometric.h>
 
 #include "Globals.h"
@@ -215,7 +215,7 @@ void Controller::OnButton(const Event::MouseButtonEvent& event) {
     }
 
     if(event.button == Event::MouseButtonEvent::BUTTON_RIGHT){
-        m_machine.addStateAtBottom(new Collada(m_machine));
+        m_machine.addStateAtBottom(new HDRBloom(m_machine));
     }
 }
 

@@ -867,17 +867,17 @@ WGPUTextureFormat wgpMatchingFormat(WGPUSurfaceCapabilities& surfaceCapabilities
 void wgpProcessQueue() {
     if (!wgpContext.device || !wgpContext.queue || !wgpContext.instance) return;
 
-    std::atomic<bool> done{ false };
+    std::atomic<bool> userdata{ false };
     WGPUQueueWorkDoneCallbackInfo callbackInfo = {};
     callbackInfo.mode = WGPUCallbackMode_AllowProcessEvents;
     callbackInfo.callback = [](WGPUQueueWorkDoneStatus status, WGPUStringView message, void* userdata1, void* userdata2) {
         auto* flag = static_cast<std::atomic<bool>*>(userdata1);
         flag->store(true);
     };
-    callbackInfo.userdata1 = &done;
+    callbackInfo.userdata1 = &userdata;
 
     wgpuQueueOnSubmittedWorkDone(wgpContext.queue, callbackInfo);
-    while(!done.load()) {
+    while(!userdata.load()) {
         wgpuInstanceProcessEvents(wgpContext.instance);
         std::this_thread::sleep_for(std::chrono::microseconds(10));
     }

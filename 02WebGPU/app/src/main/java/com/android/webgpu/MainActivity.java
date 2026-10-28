@@ -16,7 +16,7 @@ import android.widget.FrameLayout;
 import androidx.appcompat.widget.Toolbar;
 
 public class MainActivity extends AppCompatActivity implements InputManager.InputDeviceListener {
-    private final static String[] STATES = {"Collada", "Wireframe", "Deferred", "Particle", "Volume", "Audio Decode", "Video Decode", "Cubes", "Isometric" , "Controller"};
+    private final static String[] STATES = {"Collada", "Wireframe", "Deferred", "Particle", "Volume", "Audio Decode", "Video Decode", "Cubes", "Isometric" , "Controller", "HDR Bloom"};
     private View view;
     @Keep
     private GamepadManager gamepadManager;

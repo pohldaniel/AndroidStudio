@@ -13,7 +13,8 @@ enum States {
 	VIDEO_DECODE,
 	CUBES,
 	ISOMETRIC,
-	CONTROLLER
+	CONTROLLER,
+	HDR_BLOOM
 };
 
 class State;
