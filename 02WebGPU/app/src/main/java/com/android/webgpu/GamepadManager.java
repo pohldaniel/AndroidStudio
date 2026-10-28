@@ -8,7 +8,7 @@ import android.os.VibratorManager;
 import android.view.InputDevice;
 
 public class GamepadManager {
-    private final static String[] VENDORS = {"IGP", "SONY"};
+    private final static String[] VENDORS = {"IGP", "SONY", "DUALSENSE WIRELESS"};
 
     GamepadManager(MainActivity instance){
         InputManager inputManager = (InputManager) instance.getSystemService(android.content.Context.INPUT_SERVICE);
