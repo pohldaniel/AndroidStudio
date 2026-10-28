@@ -75,7 +75,7 @@ void Segment::BuildMeshXY(const std::array<float, 3>& position, float radius, fl
 	}
 
 	for (int i = 0, k = topVertexIndex + 1; i <= vResolution; ++i, ++k) {
-		indexBuffer.push_back(topVertexIndex); indexBuffer.push_back(k + 1); indexBuffer.push_back(k);
+		indexBuffer.push_back(topVertexIndex); indexBuffer.push_back(k); indexBuffer.push_back(k + 1);
 	}
 }
 
@@ -124,6 +124,6 @@ void Segment::BuildMeshXZ(const std::array<float, 3>& position, float radius, fl
 	}
 
 	for (int i = 0, k = topVertexIndex + 1; i <= vResolution; ++i, ++k) {
-		indexBuffer.push_back(topVertexIndex); indexBuffer.push_back(k + 1); indexBuffer.push_back(k);
+		indexBuffer.push_back(topVertexIndex); indexBuffer.push_back(k); indexBuffer.push_back(k + 1);
 	}
 }

@@ -1,14 +1,16 @@
 #pragma once
-
+#include <functional>
 #include <webgpu.h>
 
 class WgpTexture;
 class WgpBuffer;
-
 struct WgpRenderer {
 	static void DrawDepth(const WgpTexture& depthTexture, const std::function<void(const WGPURenderPassEncoder& renderPassEncoder)>& OnDraw = nullptr);
-	static void Draw(const WgpTexture& colorTexture, const WgpTexture& depthTexture, const std::function<void(const WGPURenderPassEncoder& renderPassEncoder)>& OnDraw = nullptr);
 	static void DrawColor(const WgpTexture& colorTexture, const std::function<void(const WGPURenderPassEncoder& renderPassEncoder)>& OnDraw = nullptr);
+	static void Draw(const WgpTexture& colorTexture, const WgpTexture& depthTexture, const std::function<void(const WGPURenderPassEncoder& renderPassEncoder)>& OnDraw = nullptr);
+	static void Draw(const WgpTexture& colorTexture, const WgpTexture& depthTexture, const std::function<void(const WGPURenderPassDescriptor& renderPassDescriptor)>& OnDraw = nullptr);
+	static void Draw(const WgpTexture& colorTexture, const std::function<void(const WGPURenderPassDescriptor& renderPassDescriptor, uint32_t mip)>& OnDraw = nullptr);
+	static void Draw(const WGPUTextureView& textureView, WGPULoadOp loadOp = WGPULoadOp_Clear, const std::function<void(const WGPURenderPassDescriptor& renderPassDescriptor)>& OnDraw = nullptr);
 
 	static void Draw(const WgpTexture& texture, const std::function<void(const WGPURenderPassEncoder& renderPassEncoder, uint32_t layer, uint32_t mip)>& OnDraw = nullptr);
 	static void Dispatch(const WgpTexture& texture, const WgpBuffer& probability, const WgpBuffer& bufferA, const WgpBuffer& bufferB);

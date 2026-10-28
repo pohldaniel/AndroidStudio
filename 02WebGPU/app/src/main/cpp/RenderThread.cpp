@@ -1,5 +1,6 @@
 #include "WebGPU/WgpContext.h"
 #include "States/StateMachine.h"
+#include "core/GamePad.h"
 #include "DeltaClock.h"
 #include "Globals.h"
 #include "RenderThread.h"
@@ -91,7 +92,8 @@ void RenderThread::threadLoop() {
             stateMachine.fixedUpdate();
             m_accumulator -= FIXED_STEP;
         }
-
+        //SDLGamePad::Update();
+        AndroidGamepad::Update();
         stateMachine.update();
         stateMachine.render();
     }

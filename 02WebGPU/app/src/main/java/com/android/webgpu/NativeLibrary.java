@@ -20,4 +20,9 @@ public class NativeLibrary {
     public static native void OnButton(int button);
 
     public static native void nativeSendTouch(int pointerId, float x, float y, int actionType);
+
+    public static native void nativeInjectMotionEvent(float axisX, float axisY, float axisZ, float axisRX, float axisRY, float axisRZ, float axisBrake, float axisGas, float hatX, float hatY, int source, int deviceId);
+    public static native void nativeInjectKeyEvent(int keyCode, int action, int source, int deviceId);
+    public static native void nativeOnDeviceConnected(int deviceId, int layoutType);
+    public static native void nativeOnDeviceDisconnected(int deviceId);
 }

@@ -7,7 +7,7 @@
 #include <Nuklear/NkStyle.h>
 
 #include <States/Cubes.h>
-#include <States/Collada.h>
+#include <States/Controller.h>
 
 #include <core/scene/CollisionNode.h>
 
@@ -683,7 +683,7 @@ void Isometric::OnButton(const Event::MouseButtonEvent& event) {
     }
 
     if(event.button == Event::MouseButtonEvent::BUTTON_RIGHT){
-        m_machine.addStateAtBottom(new Collada(m_machine));
+        m_machine.addStateAtBottom(new Controller(m_machine));
     }
 }
 

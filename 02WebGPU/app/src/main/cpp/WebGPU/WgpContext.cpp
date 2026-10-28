@@ -1,3 +1,5 @@
+#include <thread>
+#include <chrono>
 #include <android/native_window.h>
 #include <AssetIO.h>
 
@@ -877,6 +879,7 @@ void wgpProcessQueue() {
     wgpuQueueOnSubmittedWorkDone(wgpContext.queue, callbackInfo);
     while(!done.load()) {
         wgpuInstanceProcessEvents(wgpContext.instance);
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
     }
 }
 
