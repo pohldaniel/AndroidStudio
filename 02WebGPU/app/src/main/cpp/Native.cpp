@@ -195,10 +195,21 @@ Java_com_android_webgpu_NativeLibrary_OnGenericMotionEvent(JNIEnv* env, jclass c
     for (int i = 0; i < 4; ++i) {
         AndroidGamepad* player = AndroidGamepad::s_Players[i];
         if (player->getDeviceId() == deviceId && player->isConnected()) {
-            player->setRightStickX(AndroidGamepad::ApplyDeadzone(axisX));
-            player->setRightStickY(-AndroidGamepad::ApplyDeadzone(axisY));
-            player->setLeftStickX(player->getLayoutType() == GamepadLayout::DINPUT ? AndroidGamepad::ApplyDeadzone(axisZ) : AndroidGamepad::ApplyDeadzone(axisRX));
-            player->setLeftStickY(player->getLayoutType() == GamepadLayout::DINPUT ? -AndroidGamepad::ApplyDeadzone(axisRZ) : -AndroidGamepad::ApplyDeadzone(axisRY));
+            float normRightX = 0.0f;
+            float normRightY = 0.0f;
+            AndroidGamepad::ApplyRadialDeadzone(axisX, -axisY, normRightX, normRightY);
+
+            player->setRightStickX(normRightX);
+            player->setRightStickY(normRightY);
+
+            float rawLeftX = (player->getLayoutType() == GamepadLayout::DINPUT) ? axisZ  : axisRX;
+            float rawLeftY = (player->getLayoutType() == GamepadLayout::DINPUT) ? axisRZ : axisRY;
+            float normLeftX = 0.0f;
+            float normLeftY = 0.0f;
+            AndroidGamepad::ApplyRadialDeadzone(rawLeftX, -rawLeftY, normLeftX, normLeftY);
+
+            player->setLeftStickX(normLeftX);
+            player->setLeftStickY(normLeftY);
 
             float axisLT = player->getLayoutType() == GamepadLayout::DINPUT ? axisBrake : axisZ;
             float axisRT = player->getLayoutType() == GamepadLayout::DINPUT ? axisGas : axisRZ;

@@ -9,7 +9,7 @@
 JavaVM* AndroidGamepad::Vm;
 jclass AndroidGamepad::VibrationClass;
 jmethodID AndroidGamepad::VibrateMethodId;
-const float AndroidGamepad::Deadzone = 0.12f;
+const float AndroidGamepad::DEADZONE = 0.12f;
 AndroidGamepad* AndroidGamepad::s_Players[4] = { nullptr, nullptr, nullptr, nullptr };
 
 AndroidGamepad::AndroidGamepad() {
@@ -251,8 +251,19 @@ GamepadButton AndroidGamepad::MapKeyCode(int32_t keyCode) {
     }*/
 }
 
-float AndroidGamepad::ApplyDeadzone(float value) {
-    if (std::fabs(value) < Deadzone) return 0.0f;
-    return (value > 0.0f) ? (value - Deadzone) / (1.0f - Deadzone)
-                          : (value + Deadzone) / (1.0f - Deadzone);
+void  AndroidGamepad::ApplyRadialDeadzone(float rawX, float rawY, float& outX, float& outY) {
+    float magnitude = std::sqrt(rawX * rawX + rawY * rawY);
+    if (magnitude > DEADZONE) {
+        if (magnitude > 1.0f) magnitude = 1.0f;
+
+        float normX = rawX / magnitude;
+        float normY = rawY / magnitude;
+        float normalizedMagnitude = (magnitude - DEADZONE) / (1.0f - DEADZONE);
+
+        outX = normX * normalizedMagnitude;
+        outY = normY * normalizedMagnitude;
+    } else {
+        outX = 0.0f;
+        outY = 0.0f;
+    }
 }

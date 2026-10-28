@@ -95,7 +95,7 @@ public:
 	static IGamePad* GetPlayer(int playerIndex);
 	static IGamePad* GetPlayer();
 	static GamepadButton MapKeyCode(int32_t keyCode);
-    static float ApplyDeadzone(float value);
+    static void  ApplyRadialDeadzone(float rawX, float rawY, float& outX, float& outY);
 	static AndroidGamepad* s_Players[4];
 
 private:
@@ -115,7 +115,7 @@ private:
     bool m_connected;
     int m_deviceId;
 
-	static const float Deadzone;
+	static const float DEADZONE;
 	static JavaVM* Vm;
 	static jclass VibrationClass;
 	static jmethodID VibrateMethodId;

@@ -16,6 +16,7 @@
 #include <core/entities/Player.h>
 
 #include "InputTouch.h"
+#include "GamePad.h"
 #include "Isometric.h"
 #include "Logging.h"
 #include "Globals.h"
@@ -348,8 +349,8 @@ void Isometric::fixedUpdate() {
 
 void Isometric::update() {
 	nkUpdateInput(0, 0, false, false, 0.0f);
-
-    if (!m_isDeath && m_rotationButtonResult.buttonDown && (lastFireTime + 0.1f) < Clock()) {
+    IGamePad* gamePad = AndroidGamepad::GetPlayer();
+    if (!m_isDeath && ((gamePad && gamePad->buttonDown(GamepadButton::GAMEPAD_RIGHT_SHOULDER)) || m_rotationButtonResult.buttonDown) && (lastFireTime + 0.1f) < Clock()) {
         const glm::quat midOri = m_player.getOrientation();
         const glm::mat4 playerModelTransform = m_player.getWorldTransformation();
         const glm::vec3 projectileSpawnPoint = playerModelTransform * glm::vec4(-20.0f * 0.01f, 120.0f * 0.01f, 100.0f * 0.01f, 1.0f);
@@ -364,6 +365,27 @@ void Isometric::update() {
 
     const glm::vec3 posistion = static_cast<const AnimatedMesh*>(m_player.getMesh())->getBone(0u).getPosition();
     m_camera.lookAt(posistion + glm::vec3(0.0f, 4.3f, 4.0f), posistion, glm::vec3(0.0f, 1.0f, 0.0f));
+
+    if (gamePad && (gamePad->getLeftStickX() || gamePad->getLeftStickY()) && !m_isDeath) {
+        float targetRadians = glm::atan(gamePad->getLeftStickX(), -gamePad->getLeftStickY());
+        glm::quat targetRotation = glm::quat(glm::vec3(0.0f, targetRadians, 0.0f));
+        glm::quat currentRotation = m_player.getOrientation();
+
+        float rotationSpeed = 5.0f;
+        float t = std::min(rotationSpeed * m_dt, 1.0f);
+        glm::quat newRotation = glm::slerp(currentRotation, targetRotation, t);
+        m_player.setOrientation(newRotation);
+
+        float radians = 2.0f * glm::atan(newRotation.y, newRotation.w);
+        float degrees = glm::degrees(radians);
+
+        if (degrees < 0.0f) {
+            degrees += 360.0f;
+        }
+
+        aimTheta = degrees;
+        m_rotationButtonResult.degrees = degrees;
+    }
 
     if(m_rotationButtonResult.degrees != 0.0f && !m_isDeath)
         m_player.setOrientation(0.0f, m_rotationButtonResult.degrees, 0.0f);
@@ -390,6 +412,11 @@ void Isometric::update() {
     bool playerMove = false;
 
     glm::vec3 playerDirection = glm::vec3(0.0f, 0.0f, 0.0f);
+
+    if (gamePad) {
+        playerDirection = glm::vec3(gamePad->getRightStickX(), 0.0f, -gamePad->getRightStickY());
+    }
+
     if (moveY > 0.0f && !m_isDeath) {
         playerDirection -= glm::vec3(0.0f, 0.0f, 1.0f);
     }
@@ -660,7 +687,7 @@ void Isometric::OnFillBuffer(nk_context& nkCntxt) {
 
     set_transparent_window_style();
     virtual_joystick(nk_rect(20.0f, static_cast<float>(wgpHeight) - 600.0f, 250.0f, 250.0f), joystick_finger, m_joystickResult);
-    virtual_rotation_button(nk_rect(static_cast<float>(wgpWidth) - 250.0f,static_cast<float>(wgpHeight)  - 600.0f, 210.0f, 210.0f), action_finger, m_rotationButtonResult);
+    virtual_rotation_button(nk_rect(static_cast<float>(wgpWidth) - 270.0f,static_cast<float>(wgpHeight)  - 600.0f, 250.0f, 250.0f), action_finger, m_rotationButtonResult);
     reset_transparent_window_style();
 }
 
