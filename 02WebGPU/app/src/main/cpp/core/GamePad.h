@@ -57,7 +57,9 @@ class AndroidGamepad : public IGamePad {
 public:
 
 	AndroidGamepad();
-	void update();
+	virtual ~AndroidGamepad() = default;
+
+	void update() override;
 	void setVibration(float leftMotor, float rightMotor) override;
 
 	float getLeftStickX() const override;
@@ -85,16 +87,14 @@ public:
     void setLayoutType(GamepadLayout layoutType);
     void setDeviceId(int deviceId);
     void setButtonState(GamepadButton button, bool isPressed);
+	void reset();
 
 	static void Update();
 	static void Initialize(JNIEnv* env);
 	static void Shutdown();
 	static IGamePad* GetPlayer(int playerIndex);
 	static IGamePad* GetPlayer();
-
-	void reset();
-    GamepadButton mapKeyCode(int32_t keyCode) const;
-
+	static GamepadButton MapKeyCode(int32_t keyCode);
     static float ApplyDeadzone(float value);
 	static AndroidGamepad* s_Players[4];
 
@@ -117,6 +117,6 @@ private:
 
 	static const float Deadzone;
 	static JavaVM* Vm;
-	static jclass MainActivityClass;
+	static jclass VibrationClass;
 	static jmethodID VibrateMethodId;
 };

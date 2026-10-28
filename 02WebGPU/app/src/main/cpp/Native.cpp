@@ -51,9 +51,6 @@ StateMachine* stateMachine= nullptr;
 std::unique_ptr<Physics> Globals::physics = nullptr;
 States currentState = States::COLLADA;
 
-#define ANDROID_SOURCE_GAMEPAD 0x00000401
-#define ANDROID_SOURCE_JOYSTICK 0x01000010
-
 State* recoverState(States crrntStt){
     switch(crrntStt){
         case States::COLLADA:
@@ -76,83 +73,6 @@ State* recoverState(States crrntStt){
             return new Isometric(*stateMachine);
         case States::CONTROLLER:
             return new Controller(*stateMachine);
-    }
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_com_android_webgpu_NativeLibrary_nativeOnDeviceConnected(JNIEnv* env, jclass clazz, jint deviceId, jint layoutType) {
-    for (int i = 0; i < 4; ++i) {
-        if (AndroidGamepad::s_Players[i]->getDeviceId() == deviceId) return;
-    }
-
-    for (int i = 0; i < 4; ++i) {
-        if (!AndroidGamepad::s_Players[i]->isConnected()) {
-            AndroidGamepad::s_Players[i]->setDeviceId(deviceId);
-            AndroidGamepad::s_Players[i]->setConnected(true);
-            AndroidGamepad::s_Players[i]->setLayoutType(static_cast<GamepadLayout>(layoutType));
-            break;
-        }
-    }
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_com_android_webgpu_NativeLibrary_nativeOnDeviceDisconnected(JNIEnv* env, jclass clazz, jint deviceId) {
-    for (int i = 0; i < 4; ++i) {
-        if (AndroidGamepad::s_Players[i]->getDeviceId() == deviceId) {
-            AndroidGamepad::s_Players[i]->reset();
-            break;
-        }
-    }
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_com_android_webgpu_NativeLibrary_nativeInjectKeyEvent(JNIEnv* env, jclass clazz, jint keyCode, jint action, jint source, jint deviceId) {
-    if ((source & ANDROID_SOURCE_GAMEPAD) == ANDROID_SOURCE_GAMEPAD || (source & ANDROID_SOURCE_JOYSTICK) == ANDROID_SOURCE_JOYSTICK) {
-        for (int i = 0; i < 4; ++i) {
-            AndroidGamepad* player = AndroidGamepad::s_Players[i];
-            if (player->getDeviceId() == deviceId && player->isConnected()) {
-                GamepadButton btn = player->mapKeyCode(keyCode);
-                player->setButtonState(btn, (action == 0));
-                break;
-            }
-        }
-    }
-}
-
-extern "C" JNIEXPORT void JNICALL
-Java_com_android_webgpu_NativeLibrary_nativeInjectMotionEvent(JNIEnv* env, jclass clazz,
-                                                              jfloat axisX, jfloat axisY, jfloat axisZ,jfloat axisRX, jfloat axisRY, jfloat axisRZ,
-                                                              jfloat axisBrake, jfloat axisGas, jfloat hatX, jfloat hatY, jint source, jint deviceId) {
-    for (int i = 0; i < 4; ++i) {
-        AndroidGamepad* player = AndroidGamepad::s_Players[i];
-        if (player->getDeviceId() == deviceId && player->isConnected()) {
-            player->setRightStickX(AndroidGamepad::ApplyDeadzone(axisX));
-            player->setRightStickY(-AndroidGamepad::ApplyDeadzone(axisY));
-            player->setLeftStickX(player->getLayoutType() == GamepadLayout::DINPUT ? AndroidGamepad::ApplyDeadzone(axisZ) : AndroidGamepad::ApplyDeadzone(axisRX));
-            player->setLeftStickY(player->getLayoutType() == GamepadLayout::DINPUT ? -AndroidGamepad::ApplyDeadzone(axisRZ) : -AndroidGamepad::ApplyDeadzone(axisRY));
-
-            float axisLT = player->getLayoutType() == GamepadLayout::DINPUT ? axisBrake : axisZ;
-            float axisRT = player->getLayoutType() == GamepadLayout::DINPUT ? axisGas : axisRZ;
-            player->setLeftTrigger(axisLT);
-            player->setRightTrigger(axisRT);
-            player->setButtonState(GamepadButton::GAMEPAD_LEFT_TRIGGER, (axisLT == 1.0f));
-            player->setButtonState(GamepadButton::GAMEPAD_RIGHT_TRIGGER, (axisRT == 1.0f));
-
-            bool up    = (hatX < -0.5f);
-            bool down  = (hatX > 0.5f);
-            bool left  = (hatY < -0.5f);
-            bool right = (hatY > 0.5f);
-            player->setButtonState(GamepadButton::DPAD_LEFT, up);
-            player->setButtonState(GamepadButton::DPAD_RIGHT, down);
-            player->setButtonState(GamepadButton::DPAD_UP, left);
-            player->setButtonState(GamepadButton::DPAD_DOWN, right);
-
-            player->setButtonState(GamepadButton::DPAD_UP_RIGHT, left && down);
-            player->setButtonState(GamepadButton::DPAD_DOWN_RIGHT, right && down);
-            player->setButtonState(GamepadButton::DPAD_UP_LEFT, left && up);
-            player->setButtonState(GamepadButton::DPAD_DOWN_LEFT, right && up);
-            break;
-        }
     }
 }
 
@@ -242,7 +162,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_OnButton
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_android_webgpu_NativeLibrary_nativeSendTouch(JNIEnv* env, jclass clazz, jint pointer_id, jfloat x, jfloat y, jint action_type) {
+Java_com_android_webgpu_NativeLibrary_OnTouchEvent(JNIEnv* env, jclass clazz, jint pointer_id, jfloat x, jfloat y, jint action_type) {
 
     touchStates[pointer_id].touchX = x;
     touchStates[pointer_id].touchY = y;
@@ -253,5 +173,80 @@ Java_com_android_webgpu_NativeLibrary_nativeSendTouch(JNIEnv* env, jclass clazz,
     } else if (action_type == 2) {
         touchStates[pointer_id].touchActive = false;
         touchStates[pointer_id].touchPressed = false;
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_android_webgpu_NativeLibrary_OnKey(JNIEnv* env, jclass clazz, jint keyCode, jint action, jint source, jint deviceId) {
+    for (int i = 0; i < 4; ++i) {
+        AndroidGamepad* player = AndroidGamepad::s_Players[i];
+        if (player->getDeviceId() == deviceId && player->isConnected()) {
+            GamepadButton btn = AndroidGamepad::MapKeyCode(keyCode);
+            player->setButtonState(btn, (action == 0));
+            break;
+        }
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_android_webgpu_NativeLibrary_OnGenericMotionEvent(JNIEnv* env, jclass clazz,
+                                                           jfloat axisX, jfloat axisY, jfloat axisZ,jfloat axisRX, jfloat axisRY, jfloat axisRZ,
+                                                           jfloat axisBrake, jfloat axisGas, jfloat hatX, jfloat hatY, jint source, jint deviceId) {
+    for (int i = 0; i < 4; ++i) {
+        AndroidGamepad* player = AndroidGamepad::s_Players[i];
+        if (player->getDeviceId() == deviceId && player->isConnected()) {
+            player->setRightStickX(AndroidGamepad::ApplyDeadzone(axisX));
+            player->setRightStickY(-AndroidGamepad::ApplyDeadzone(axisY));
+            player->setLeftStickX(player->getLayoutType() == GamepadLayout::DINPUT ? AndroidGamepad::ApplyDeadzone(axisZ) : AndroidGamepad::ApplyDeadzone(axisRX));
+            player->setLeftStickY(player->getLayoutType() == GamepadLayout::DINPUT ? -AndroidGamepad::ApplyDeadzone(axisRZ) : -AndroidGamepad::ApplyDeadzone(axisRY));
+
+            float axisLT = player->getLayoutType() == GamepadLayout::DINPUT ? axisBrake : axisZ;
+            float axisRT = player->getLayoutType() == GamepadLayout::DINPUT ? axisGas : axisRZ;
+            player->setLeftTrigger(axisLT);
+            player->setRightTrigger(axisRT);
+            player->setButtonState(GamepadButton::GAMEPAD_LEFT_TRIGGER, (axisLT == 1.0f));
+            player->setButtonState(GamepadButton::GAMEPAD_RIGHT_TRIGGER, (axisRT == 1.0f));
+
+            bool up    = (hatX < -0.5f);
+            bool down  = (hatX > 0.5f);
+            bool left  = (hatY < -0.5f);
+            bool right = (hatY > 0.5f);
+            player->setButtonState(GamepadButton::DPAD_LEFT, up);
+            player->setButtonState(GamepadButton::DPAD_RIGHT, down);
+            player->setButtonState(GamepadButton::DPAD_UP, left);
+            player->setButtonState(GamepadButton::DPAD_DOWN, right);
+
+            player->setButtonState(GamepadButton::DPAD_UP_RIGHT, left && down);
+            player->setButtonState(GamepadButton::DPAD_DOWN_RIGHT, right && down);
+            player->setButtonState(GamepadButton::DPAD_UP_LEFT, left && up);
+            player->setButtonState(GamepadButton::DPAD_DOWN_LEFT, right && up);
+            break;
+        }
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_android_webgpu_NativeLibrary_OnInputDeviceAdded(JNIEnv* env, jclass clazz, jint deviceId, jint layoutType) {
+    for (int i = 0; i < 4; ++i) {
+        if (AndroidGamepad::s_Players[i]->getDeviceId() == deviceId) return;
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        if (!AndroidGamepad::s_Players[i]->isConnected()) {
+            AndroidGamepad::s_Players[i]->setDeviceId(deviceId);
+            AndroidGamepad::s_Players[i]->setConnected(true);
+            AndroidGamepad::s_Players[i]->setLayoutType(static_cast<GamepadLayout>(layoutType));
+            break;
+        }
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_android_webgpu_NativeLibrary_OnInputDeviceRemoved(JNIEnv* env, jclass clazz, jint deviceId) {
+    for (int i = 0; i < 4; ++i) {
+        if (AndroidGamepad::s_Players[i]->getDeviceId() == deviceId) {
+            AndroidGamepad::s_Players[i]->reset();
+            break;
+        }
     }
 }

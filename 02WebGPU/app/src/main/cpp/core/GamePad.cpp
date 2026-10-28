@@ -7,7 +7,7 @@
 #include "GamePad.h"
 
 JavaVM* AndroidGamepad::Vm;
-jclass AndroidGamepad::MainActivityClass;
+jclass AndroidGamepad::VibrationClass;
 jmethodID AndroidGamepad::VibrateMethodId;
 const float AndroidGamepad::Deadzone = 0.12f;
 AndroidGamepad* AndroidGamepad::s_Players[4] = { nullptr, nullptr, nullptr, nullptr };
@@ -52,55 +52,9 @@ void AndroidGamepad::setVibration(float leftMotor, float rightMotor) {
     }
 
     if (env != nullptr) {
-        env->CallStaticVoidMethod(MainActivityClass, VibrateMethodId, m_deviceId, leftMotor, rightMotor);
+        env->CallStaticVoidMethod(VibrationClass, VibrateMethodId, m_deviceId, leftMotor, rightMotor);
         if (isAttached) {
             Vm->DetachCurrentThread();
-        }
-    }
-}
-
-IGamePad* AndroidGamepad::GetPlayer(int playerIndex) {
-    if (playerIndex >= 0 && playerIndex < 4) {
-        return AndroidGamepad::s_Players[playerIndex];
-    }
-    return nullptr;
-}
-
-IGamePad* AndroidGamepad::GetPlayer(){
-    for (int i = 0; i < 4; ++i) {
-        if (AndroidGamepad::s_Players[i]->isConnected()) {
-            return AndroidGamepad::s_Players[i];
-        }
-    }
-    return nullptr;
-}
-
-void AndroidGamepad::Update() {
-    for (int i = 0; i < 4; ++i) {
-        IGamePad* player = AndroidGamepad::GetPlayer(i);
-        if (player) {
-            player->update();
-        }
-    }
-}
-
-void AndroidGamepad::Initialize(JNIEnv* env)  {
-    for (int i = 0; i < 4; ++i) {
-        AndroidGamepad::s_Players[i] = new AndroidGamepad();
-        AndroidGamepad::s_Players[i]->m_playerIndex = i;
-    }
-
-    env->GetJavaVM(&Vm);
-    jclass localClass = env->FindClass("com/android/webgpu/MainActivity");
-    MainActivityClass = (jclass)env->NewGlobalRef(localClass);
-    VibrateMethodId = env->GetStaticMethodID(MainActivityClass, "triggerGamepadVibration", "(IFF)V");
-}
-
-void AndroidGamepad::Shutdown() {
-    for (int i = 0; i < 4; ++i) {
-        if (s_Players[i]) {
-            delete s_Players[i];
-            s_Players[i] = nullptr;
         }
     }
 }
@@ -193,7 +147,62 @@ void AndroidGamepad::setButtonState(GamepadButton button, bool isPressed) {
     m_pCurrButtonStates[button] = isPressed;
 }
 
-GamepadButton AndroidGamepad::mapKeyCode(int32_t keyCode) const {
+void AndroidGamepad::reset() {
+    m_deviceId = -1;
+    m_connected = false;
+    memset(m_pCurrButtonStates, false, 21);
+    memset(m_pPrevButtonStates, false, 21);
+    m_leftStickX = m_leftStickY = m_rightStickX = m_rightStickY = 0.0f;
+    m_leftTrigger = m_rightTrigger = 0.0f;
+}
+
+IGamePad* AndroidGamepad::GetPlayer(int playerIndex) {
+    if (playerIndex >= 0 && playerIndex < 4) {
+        return AndroidGamepad::s_Players[playerIndex];
+    }
+    return nullptr;
+}
+
+IGamePad* AndroidGamepad::GetPlayer(){
+    for (int i = 0; i < 4; ++i) {
+        if (AndroidGamepad::s_Players[i]->isConnected()) {
+            return AndroidGamepad::s_Players[i];
+        }
+    }
+    return nullptr;
+}
+
+void AndroidGamepad::Update() {
+    for (int i = 0; i < 4; ++i) {
+        IGamePad* player = AndroidGamepad::GetPlayer(i);
+        if (player) {
+            player->update();
+        }
+    }
+}
+
+void AndroidGamepad::Initialize(JNIEnv* env)  {
+    for (int i = 0; i < 4; ++i) {
+        AndroidGamepad::s_Players[i] = new AndroidGamepad();
+        AndroidGamepad::s_Players[i]->m_playerIndex = i;
+    }
+
+    env->GetJavaVM(&Vm);
+    jclass localClass = env->FindClass("com/android/webgpu/GamepadManager");
+    VibrationClass = (jclass)env->NewGlobalRef(localClass);
+    VibrateMethodId = env->GetStaticMethodID(VibrationClass, "callVibration", "(IFF)V");
+}
+
+void AndroidGamepad::Shutdown() {
+    for (auto & s_Player : s_Players) {
+        if (s_Player) {
+            delete s_Player;
+            s_Player = nullptr;
+        }
+    }
+}
+
+GamepadButton AndroidGamepad::MapKeyCode(int32_t keyCode) {
     //if(m_layoutType == GamepadLayout::STANDARD){
         switch (keyCode) {
             case AKEYCODE_BUTTON_A:      return GamepadButton::GAMEPAD_A;
@@ -240,15 +249,6 @@ GamepadButton AndroidGamepad::mapKeyCode(int32_t keyCode) const {
             default:  return GamepadButton::NONE;
         }
     }*/
-}
-
-void AndroidGamepad::reset() {
-    m_deviceId = -1;
-    m_connected = false;
-    memset(m_pCurrButtonStates, false, 21);
-    memset(m_pPrevButtonStates, false, 21);
-    m_leftStickX = m_leftStickY = m_rightStickX = m_rightStickY = 0.0f;
-    m_leftTrigger = m_rightTrigger = 0.0f;
 }
 
 float AndroidGamepad::ApplyDeadzone(float value) {

@@ -8,5 +8,4 @@
 class AndroidGamepad;
 namespace Globals {
     extern std::unique_ptr<Physics> physics;
-
 }
