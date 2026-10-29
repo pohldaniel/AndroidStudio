@@ -44,12 +44,13 @@
 #include "DeltaClock.h"
 #include "Logging.h"
 
-
 DeltaClock DeltaClock;
 RenderThread* renderThread = nullptr;
 StateMachine* stateMachine= nullptr;
 std::unique_ptr<Physics> Globals::physics = nullptr;
 States currentState = States::COLLADA;
+std::vector<TouchEvent> TouchEventQueue;
+std::mutex TouchMutex;
 
 State* recoverState(States crrntStt){
     switch(crrntStt){
@@ -163,17 +164,8 @@ extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_OnButton
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_android_webgpu_NativeLibrary_OnTouchEvent(JNIEnv* env, jclass clazz, jint pointer_id, jfloat x, jfloat y, jint action_type) {
-
-    touchStates[pointer_id].touchX = x;
-    touchStates[pointer_id].touchY = y;
-
-    if (action_type == 0 || action_type == 1) {
-        touchStates[pointer_id].touchPressed = !touchStates[pointer_id].touchActive;
-        touchStates[pointer_id].touchActive = true;
-    } else if (action_type == 2) {
-        touchStates[pointer_id].touchActive = false;
-        touchStates[pointer_id].touchPressed = false;
-    }
+    std::lock_guard<std::mutex> lock(TouchMutex);
+    TouchEventQueue.push_back({pointer_id, x, y, action_type & AMOTION_EVENT_ACTION_MASK});
 }
 
 extern "C" JNIEXPORT void JNICALL

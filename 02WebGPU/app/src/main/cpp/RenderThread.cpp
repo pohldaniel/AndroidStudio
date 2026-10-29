@@ -3,6 +3,7 @@
 #include "core/GamePad.h"
 #include "DeltaClock.h"
 #include "Globals.h"
+#include "InputTouch.h"
 #include "RenderThread.h"
 
 void RenderThread::start() {
@@ -64,6 +65,7 @@ void RenderThread::setWindow(ANativeWindow* window) {
 }
 
 void RenderThread::threadLoop() {
+    std::vector<TouchEvent> localFrameEvents;
     while (m_running) {
         std::unique_lock<std::mutex> lock(m_mutex);
 
@@ -83,6 +85,27 @@ void RenderThread::threadLoop() {
         m_pause = false;
         lock.unlock();
 
+        {
+            std::lock_guard<std::mutex> touchLock(TouchMutex);
+            std::swap(localFrameEvents, TouchEventQueue);
+        }
+
+        for (const auto& event : localFrameEvents) {
+            if (event.pointerId >= 0 && event.pointerId < MAX_TOUCH_POINTERS) {
+                touchStates[event.pointerId].touchX = event.x;
+                touchStates[event.pointerId].touchY = event.y;
+
+                if (event.action == AMOTION_EVENT_ACTION_UP || event.action == AMOTION_EVENT_ACTION_DOWN) {
+                    touchStates[event.pointerId].touchPressed = !touchStates[event.pointerId].touchActive;
+                    touchStates[event.pointerId].touchActive = true;
+                } else if (event.action == AMOTION_EVENT_ACTION_MOVE) {
+                    touchStates[event.pointerId].touchActive = false;
+                    touchStates[event.pointerId].touchPressed = false;
+                }
+            }
+        }
+        localFrameEvents.clear();
+
         float dt = deltaClock.ReadDelta();
 
         m_accumulator = dt > FIXED_STEP * 2.0f ? m_accumulator + FIXED_STEP: m_accumulator + dt;
@@ -92,10 +115,14 @@ void RenderThread::threadLoop() {
             stateMachine.fixedUpdate();
             m_accumulator -= FIXED_STEP;
         }
-        //SDLGamePad::Update();
+
         AndroidGamepad::Update();
         stateMachine.update();
         stateMachine.render();
+
+        for(auto & touchState : touchStates){
+            touchState.touchPressed = false;
+        }
     }
 }
 

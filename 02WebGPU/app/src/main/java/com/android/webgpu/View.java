@@ -62,6 +62,7 @@ class View extends SurfaceView implements SurfaceHolder.Callback {
                     }
                 } else {
                     if (activeActionPointerId == -1) {
+                        activeJoystickPointerId = pointerId;
                         NativeLibrary.OnTouchEvent(pointerId, x, y, 0);
                     }
                 }
@@ -97,43 +98,4 @@ class View extends SurfaceView implements SurfaceHolder.Callback {
         return super.performClick();
     }
 
-    /*@Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if ((event.getSource() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
-                (event.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
-
-            NativeLibrary.handleKeyEvent(keyCode, true);
-            return true;
-        }
-        return super.onKeyDown(keyCode, event);
-    }
-
-    @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
-        if ((event.getSource() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
-                (event.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
-
-            NativeLibrary.handleKeyEvent(keyCode, false);
-            return true;
-        }
-        return super.onKeyUp(keyCode, event);
-    }
-
-    @Override
-    public boolean onGenericMotionEvent(MotionEvent event) {
-        if ((event.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK &&
-                event.getAction() == MotionEvent.ACTION_MOVE) {
-
-            // Relevante Achsen auslesen und an C++ senden
-            NativeLibrary.handleMotionEvent(MotionEvent.AXIS_X, event.getAxisValue(MotionEvent.AXIS_X));
-            NativeLibrary.handleMotionEvent(MotionEvent.AXIS_Y, event.getAxisValue(MotionEvent.AXIS_Y));
-            NativeLibrary.handleMotionEvent(MotionEvent.AXIS_Z, event.getAxisValue(MotionEvent.AXIS_Z));
-            NativeLibrary.handleMotionEvent(MotionEvent.AXIS_RZ, event.getAxisValue(MotionEvent.AXIS_RZ));
-            NativeLibrary.handleMotionEvent(MotionEvent.AXIS_BRAKE, event.getAxisValue(MotionEvent.AXIS_BRAKE));
-            NativeLibrary.handleMotionEvent(MotionEvent.AXIS_GAS, event.getAxisValue(MotionEvent.AXIS_GAS));
-
-            return true;
-        }
-        return super.onGenericMotionEvent(event);
-    }*/
 }
