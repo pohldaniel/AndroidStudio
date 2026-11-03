@@ -45,6 +45,7 @@ extern "C" {
 	WGPUTexture wgpCreateTexture(uint32_t width, uint32_t height, uint32_t depth, WGPUTextureUsage textureUsage, WGPUTextureFormat textureFormat, uint32_t mipLevelCount = 1u, uint32_t sampleCount = 1u, WGPUTextureFormat viewFormat = WGPUTextureFormat_Undefined);
 	WGPUTextureView wgpCreateTextureView(const WGPUTexture& texture, WGPUTextureAspect aspect, bool isArray = false);
     WGPUSampler wgpCreateSampler(WGPUFilterMode filterMode = WGPUFilterMode_Linear, WGPUAddressMode addressMode = WGPUAddressMode_ClampToEdge, uint16_t maxAnisotropy = 1u, WGPUMipmapFilterMode mipmapFilterMode = WGPUMipmapFilterMode_Undefined, WGPUCompareFunction compareFunction = WGPUCompareFunction_Undefined);
+    WGPUSampler wgpCreateSamplerExt(const WGPUSamplerDescriptor& samplerDescriptor);
     WGPUBuffer wgpCreateEmptyBuffer(uint32_t size, WGPUBufferUsage bufferUsage, bool mappedAtCreation = false);
     WGPUBuffer wgpCreateBuffer(const void* data, uint32_t size, WGPUBufferUsage bufferUsage);
     WGPUShaderModule wgpCreateShaderFromFile(const std::string& path);
@@ -64,6 +65,11 @@ extern "C" {
     void wgpSetSurfaceColorFormat(WGPUTextureFormat textureFormat, const std::function<void()>& onSurfaceChange = nullptr);
     void wgpSetSurfaceDepthFormat(WGPUTextureFormat textureFormat, const std::function<void()>& onSurfaceChange = nullptr);
     void wgpSetMSAASampleCount(uint32_t count, const std::function<void()>& onSurfaceChange = nullptr);
+
+	void wgpTextureAddUsage(WGPUTexture& texture, WGPUTextureView& depthTextureView, WGPUTextureUsage textureUsage);
+	void wgpTextureRemoveUsage(WGPUTexture& texture, WGPUTextureView& depthTextureView, WGPUTextureUsage textureUsage);
+	void wgpTextureSetUsage(WGPUTexture& texture, WGPUTextureView& depthTextureView, WGPUTextureUsage textureUsage);
+
     WGPURenderPassDepthStencilAttachment wgpCopyDepthStencilAttachment(const WGPURenderPassDepthStencilAttachment* src);
 
     void wgpDraw();
@@ -91,6 +97,7 @@ enum RenderPipelineFlags {
 
 enum BlendMode {
 	ALPHA_BLENDING,
+	ALPHA_BLENDING_ONE,
 	ADDITIVE_BLENDING_SRC,
 	ADDITIVE_BLENDING_ONE
 };
@@ -141,7 +148,7 @@ struct WgpContext {
 	                          VertexLayoutSlot vertexLayoutSlot,
 	                          const std::function<std::vector<WGPUBindGroupLayout>()>& onBindGroupLayouts = nullptr,
 	                          uint32_t sampleCount = 1u,
-	                          WGPUPrimitiveTopology primitiveTopology = WGPUPrimitiveTopology::WGPUPrimitiveTopology_TriangleList,
+	                          WGPUPrimitiveTopology primitiveTopology = WGPUPrimitiveTopology::WGPUPrimitiveTopology_Undefined,
 	                          WGPUTextureFormat colorTextureFormat = WGPUTextureFormat::WGPUTextureFormat_Undefined,
 	                          WGPUTextureFormat depthTextureFormat = WGPUTextureFormat::WGPUTextureFormat_Undefined,
 	                          WGPUCompareFunction depthCompareFunction = WGPUCompareFunction::WGPUCompareFunction_LessEqual,
@@ -169,6 +176,7 @@ struct WgpContext {
 	WGPUTexture msaaTexture = nullptr;
 	uint32_t msaaSampleCount = 1u;
 
+	WGPULimits limits = {};
 	WGPUSurfaceConfiguration config = {};
 	WGPUSurfaceCapabilities surfaceCapabilities;
 	WGPUTextureFormat depthFormat = WGPUTextureFormat::WGPUTextureFormat_Depth24PlusStencil8;
