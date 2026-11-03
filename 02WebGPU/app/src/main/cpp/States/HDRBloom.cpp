@@ -2,7 +2,7 @@
 #include <WebGPU/WgpRenderer.h>
 
 #include <States/Controller.h>
-#include <States/Collada.h>
+#include <States/ComputeParticleEasing.h>
 
 #include "Globals.h"
 #include "InputTouch.h"
@@ -324,7 +324,7 @@ void HDRBloom::OnButton(const Event::MouseButtonEvent& event) {
     }
 
     if(event.button == Event::MouseButtonEvent::BUTTON_RIGHT){
-        m_machine.addStateAtBottom(new Collada(m_machine));
+        m_machine.addStateAtBottom(new ComputeParticleEasing(m_machine));
     }
 }
 

@@ -52,27 +52,31 @@ class View extends SurfaceView implements SurfaceHolder.Callback {
         float y = event.getY(pointerIndex);
         int viewWidth = getWidth();
 
+        final int NDK_ACTION_DOWN = 0;
+        final int NDK_ACTION_UP = 1;
+        final int NDK_ACTION_MOVE = 2;
+
         switch (action) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN:
                 if (x < (viewWidth / 2)) {
                     if (activeJoystickPointerId == -1) {
                         activeJoystickPointerId = pointerId;
-                        NativeLibrary.OnTouchEvent(pointerId, x, y, 0); // DOWN
+                        NativeLibrary.OnTouchEvent(pointerId, x, y, NDK_ACTION_DOWN);
                     }
                 } else {
                     if (activeActionPointerId == -1) {
-                        activeJoystickPointerId = pointerId;
-                        NativeLibrary.OnTouchEvent(pointerId, x, y, 0);
+                        activeActionPointerId = pointerId;
+                        NativeLibrary.OnTouchEvent(pointerId, x, y, NDK_ACTION_DOWN);
                     }
                 }
                 break;
 
             case MotionEvent.ACTION_MOVE:
                 for (int i = 0; i < event.getPointerCount(); i++) {
-                    int pId = event.getPointerId(i);
-                    if (pId == activeJoystickPointerId || pId == activeActionPointerId) {
-                        NativeLibrary.OnTouchEvent(pId, event.getX(i), event.getY(i), 1); // MOVE
+                    int currentPointerId = event.getPointerId(i);
+                    if (currentPointerId == activeJoystickPointerId || currentPointerId == activeActionPointerId) {
+                        NativeLibrary.OnTouchEvent(currentPointerId, event.getX(i), event.getY(i), NDK_ACTION_MOVE);
                     }
                 }
                 break;
@@ -82,10 +86,10 @@ class View extends SurfaceView implements SurfaceHolder.Callback {
             case MotionEvent.ACTION_CANCEL:
                 if (pointerId == activeJoystickPointerId) {
                     activeJoystickPointerId = -1;
-                    NativeLibrary.OnTouchEvent(pointerId, x, y, 2); // UP
+                    NativeLibrary.OnTouchEvent(pointerId, x, y, NDK_ACTION_UP);
                 } else if (pointerId == activeActionPointerId) {
                     activeActionPointerId = -1;
-                    NativeLibrary.OnTouchEvent(pointerId, x, y, 2); // UP
+                    NativeLibrary.OnTouchEvent(pointerId, x, y, NDK_ACTION_UP);
                     performClick();
                 }
                 break;

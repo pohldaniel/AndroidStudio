@@ -14,7 +14,8 @@ enum States {
 	CUBES,
 	ISOMETRIC,
 	CONTROLLER,
-	HDR_BLOOM
+	HDR_BLOOM,
+	COMPUTE_PARTICLE_EASING
 };
 
 class State;

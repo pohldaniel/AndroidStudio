@@ -22,7 +22,7 @@
 #include "Globals.h"
 #include "DeltaClock.h"
 
-Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC), m_bulletStore(&m_threadPool), m_threadPool(4) {
+Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC), m_bulletStore(&m_threadPool), m_threadPool(4){
     wgpSetSurfaceDepthFormat(WGPUTextureFormat::WGPUTextureFormat_Depth24Plus);
 
     nkInit(static_cast<float>(wgpWidth), static_cast<float>(wgpHeight));
@@ -252,15 +252,15 @@ Isometric::Isometric(StateMachine& machine) : State(machine, States::ISOMETRIC),
     nkContext.OnFillBuffer = std::bind(&Isometric::OnFillBuffer, this, std::placeholders::_1);
 
     m_scene = new SceneNode();
-    m_scene->setOnChildAdded([this](Node* newNode) {
-        if (auto* enemy = dynamic_cast<Enemy*>(newNode)) {
+    m_scene->setOnChildAdded([this](Node* node) {
+        if (auto* enemy = dynamic_cast<Enemy*>(node)) {
             m_enemies.push_back(enemy);
             m_count++;
         }
     });
 
-    m_scene->setOnChildRemoved([this](Node* removedNode) {
-        auto it = std::find(m_enemies.begin(), m_enemies.end(), removedNode);
+    m_scene->setOnChildRemoved([this](Node* node) {
+        auto it = std::find(m_enemies.begin(), m_enemies.end(), node);
         if (it != m_enemies.end()) {
             std::iter_swap(it, m_enemies.end() - 1);
             m_enemies.pop_back();
@@ -363,8 +363,8 @@ void Isometric::update() {
 
     m_trackball.idle();
 
-    const glm::vec3 posistion = static_cast<const AnimatedMesh*>(m_player.getMesh())->getBone(0u).getPosition();
-    m_camera.lookAt(posistion + glm::vec3(0.0f, 4.3f, 4.0f), posistion, glm::vec3(0.0f, 1.0f, 0.0f));
+    m_position = static_cast<const AnimatedMesh*>(m_player.getMesh())->getBone(0u).getPosition();
+    m_camera.lookAt(m_position + glm::vec3(0.0f, 4.3f, 4.0f), m_position, glm::vec3(0.0f, 1.0f, 0.0f));
 
     if (gamePad && (gamePad->getLeftStickX() || gamePad->getLeftStickY()) && !m_isDeath) {
         float targetRadians = glm::atan(gamePad->getLeftStickX(), -gamePad->getLeftStickY());
@@ -482,7 +482,7 @@ void Isometric::update() {
     m_player.update(m_dt);
     m_player.updateSkinning();
     m_bulletStore.update(m_dt, m_enemies);
-    updateSpawn(m_dt, posistion);
+    updateSpawn(m_dt, m_position);
 
     for (auto enemy : m_enemies) {
         enemy->update(m_dt);
@@ -649,7 +649,6 @@ void Isometric::OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURende
 
 void Isometric::OnPostDraw() {
     if (m_wantResize) {
-
         m_wgpEmissionTarget.resize(wgpWidth, wgpHeight);
         m_wgpEmissionDepth.resize(wgpWidth, wgpHeight);
 

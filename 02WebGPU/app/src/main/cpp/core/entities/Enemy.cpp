@@ -50,3 +50,7 @@ void Enemy::setIsDeath(bool isDeath) {
 bool Enemy::isDeath() {
     return m_isDeath;
 }
+
+/*void Enemy::setTarget(const glm::vec3& _target) {
+    target = &_target;
+}*/

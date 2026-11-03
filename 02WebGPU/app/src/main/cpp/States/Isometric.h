@@ -190,7 +190,6 @@ private:
     float m_countdown = 1.0f;
     size_t m_count = 0;
 
-    std::vector<CollisionEntity*> m_entities;
     Player* m_playerEntity;
     std::vector<Enemy*> m_enemies;
     std::vector<glm::mat4> m_cpuInstanceBuffer;
@@ -199,6 +198,7 @@ private:
     glm::mat4 m_lightProjection, m_lightView;
     glm::vec3 m_lightDir;
     std::vector<float> m_muzzleFlashSpritesAge;
+    glm::vec3 m_position;
 
     static WGPUBindGroup CreateBindGroupShadow(const WgpBuffer& uniformBuffer, const WgpBuffer& wigglyBuffer, const WgpBuffer& storageBuffer);
 };

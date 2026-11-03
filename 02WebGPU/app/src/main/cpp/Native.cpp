@@ -33,6 +33,8 @@
 #include <States/Cubes.h>
 #include <States/Isometric.h>
 #include <States/Controller.h>
+#include <States/HDRBloom.h>
+#include <States/ComputeParticleEasing.h>
 
 #include <core/Event.h>
 #include <core/GamePad.h>
@@ -74,6 +76,10 @@ State* recoverState(States crrntStt){
             return new Isometric(*stateMachine);
         case States::CONTROLLER:
             return new Controller(*stateMachine);
+        case States::HDR_BLOOM:
+            return new HDRBloom(*stateMachine);
+        case States::COMPUTE_PARTICLE_EASING:
+            return new ComputeParticleEasing(*stateMachine);
     }
 }
 
@@ -106,6 +112,16 @@ extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_resize(J
 
 extern "C" JNIEXPORT void JNICALL Java_com_android_webgpu_NativeLibrary_onResize(JNIEnv* env, jclass clazz, jint width, jint height) {
     renderThread->pause();
+    {
+        std::lock_guard<std::mutex> touchLock(TouchMutex);
+        TouchEventQueue.clear();
+    }
+    for (auto& touchState : touchStates) {
+        touchState.touchActive = false;
+        touchState.touchPressed = false;
+        touchState.touchX = 0.0f;
+        touchState.touchY = 0.0f;
+    }
     wgpResizeSilent(width, height);
     if(stateMachine->isRunning())
         stateMachine->getStates().top()->resize(0, 0);

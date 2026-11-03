@@ -94,13 +94,23 @@ void RenderThread::threadLoop() {
             if (event.pointerId >= 0 && event.pointerId < MAX_TOUCH_POINTERS) {
                 touchStates[event.pointerId].touchX = event.x;
                 touchStates[event.pointerId].touchY = event.y;
+                switch (event.action) {
+                    case AMOTION_EVENT_ACTION_DOWN:
+                    case AMOTION_EVENT_ACTION_POINTER_DOWN:
+                        touchStates[event.pointerId].touchPressed = !touchStates[event.pointerId].touchActive;
+                        touchStates[event.pointerId].touchActive = true;
+                        break;
 
-                if (event.action == AMOTION_EVENT_ACTION_UP || event.action == AMOTION_EVENT_ACTION_DOWN) {
-                    touchStates[event.pointerId].touchPressed = !touchStates[event.pointerId].touchActive;
-                    touchStates[event.pointerId].touchActive = true;
-                } else if (event.action == AMOTION_EVENT_ACTION_MOVE) {
-                    touchStates[event.pointerId].touchActive = false;
-                    touchStates[event.pointerId].touchPressed = false;
+                    case AMOTION_EVENT_ACTION_UP:
+                    case AMOTION_EVENT_ACTION_POINTER_UP:
+                        touchStates[event.pointerId].touchPressed = false;
+                        touchStates[event.pointerId].touchActive = false;
+                        break;
+
+                    case AMOTION_EVENT_ACTION_MOVE:
+                        touchStates[event.pointerId].touchActive = true;
+                        touchStates[event.pointerId].touchPressed = false;
+                        break;
                 }
             }
         }
