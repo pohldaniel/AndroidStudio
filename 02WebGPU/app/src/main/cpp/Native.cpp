@@ -36,6 +36,7 @@
 #include <States/HDRBloom.h>
 #include <States/ABuffer.h>
 #include <States/ComputeParticleEasing.h>
+#include <States/PristineGrid.h>
 
 #include <core/Event.h>
 #include <core/GamePad.h>
@@ -83,6 +84,8 @@ State* recoverState(States crrntStt){
             return new ABuffer(*stateMachine);
         case States::COMPUTE_PARTICLE_EASING:
             return new ComputeParticleEasing(*stateMachine);
+        case States::PRISTINE_GRID:
+            return new PristineGrid(*stateMachine);
     }
 }
 

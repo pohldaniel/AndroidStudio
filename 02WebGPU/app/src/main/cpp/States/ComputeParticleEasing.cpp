@@ -3,7 +3,7 @@
 
 #include <States/ABuffer.h>
 #include <States/HDRBloom.h>
-#include <States/Collada.h>
+#include <States/PristineGrid.h>
 
 #include "Globals.h"
 #include "InputTouch.h"
@@ -139,7 +139,7 @@ void ComputeParticleEasing::OnButton(const Event::MouseButtonEvent& event) {
     }
 
     if(event.button == Event::MouseButtonEvent::BUTTON_RIGHT){
-        m_machine.addStateAtBottom(new Collada(m_machine));
+        m_machine.addStateAtBottom(new PristineGrid(m_machine));
     }
 }
 
