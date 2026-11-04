@@ -3,6 +3,8 @@
 
 #include <States/Controller.h>
 #include <States/ComputeParticleEasing.h>
+#include <States/ABuffer.h>
+
 
 #include "Globals.h"
 #include "InputTouch.h"

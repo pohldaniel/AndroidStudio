@@ -34,6 +34,7 @@
 #include <States/Isometric.h>
 #include <States/Controller.h>
 #include <States/HDRBloom.h>
+#include <States/ABuffer.h>
 #include <States/ComputeParticleEasing.h>
 
 #include <core/Event.h>
@@ -78,6 +79,8 @@ State* recoverState(States crrntStt){
             return new Controller(*stateMachine);
         case States::HDR_BLOOM:
             return new HDRBloom(*stateMachine);
+        case States::ABUFFER:
+            return new ABuffer(*stateMachine);
         case States::COMPUTE_PARTICLE_EASING:
             return new ComputeParticleEasing(*stateMachine);
     }

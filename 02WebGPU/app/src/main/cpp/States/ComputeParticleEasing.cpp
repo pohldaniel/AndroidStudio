@@ -1,6 +1,7 @@
 #include <WebGPU/WgpContext.h>
 #include <WebGPU/WgpRenderer.h>
 
+#include <States/ABuffer.h>
 #include <States/HDRBloom.h>
 #include <States/Collada.h>
 
@@ -10,7 +11,7 @@
 #include "ComputeParticleEasing.h"
 
 ComputeParticleEasing::ComputeParticleEasing(StateMachine& machine) : State(machine, States::COMPUTE_PARTICLE_EASING){
-    m_camera.perspective(72.0f, static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
+    m_camera.perspective(glm::radians(72.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), static_cast<float>(wgpHeight), 0.0f , -1.0f, 1.0f);
     m_camera.lookAt(glm::vec3(0.0f, 5.0f, 200.0f), glm::vec3(0.0f, 0.0f, 0.0f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     m_camera.setMovingSpeed(100.0f);
@@ -125,7 +126,7 @@ void ComputeParticleEasing::OnDraw(const WGPUCommandEncoder& commandEncoder, con
 }
 
 void ComputeParticleEasing::resize(int deltaW, int deltaH) {
-    m_camera.perspective(72.0f, static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
+    m_camera.perspective(glm::radians(72.0f), static_cast<float>(wgpWidth) / static_cast<float>(wgpHeight), 0.1f, 1000.0f);
     m_camera.orthographic(0.0f, static_cast<float>(wgpWidth), static_cast<float>(wgpHeight), 0.0f , -1.0f, 1.0f);
 }
 
