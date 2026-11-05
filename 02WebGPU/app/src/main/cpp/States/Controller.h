@@ -30,7 +30,6 @@ public:
     void OnDraw(const WGPUCommandEncoder& commandEncoder, const WGPURenderPassDescriptor& renderPassDescriptor);
 
     void OnButton(const Event::MouseButtonEvent& event) override;
-    void OnReEnter(unsigned int prevState) override;
     void resize(int deltaW, int deltaH) override;
 
 private:
