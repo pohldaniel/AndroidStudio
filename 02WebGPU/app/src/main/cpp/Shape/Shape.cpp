@@ -126,6 +126,14 @@ unsigned int Shape::getStride() const {
 	return m_stride;
 }
 
+std::vector<float>& Shape::vertexBuffer() const {
+	return m_vertexBuffer;
+}
+
+std::vector<unsigned int>& Shape::indexBuffer() const {
+	return m_indexBuffer;
+}
+
 void Shape::flatShading() {
 	if (m_stride < 6u)
 		return;
