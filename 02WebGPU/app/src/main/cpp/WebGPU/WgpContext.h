@@ -158,7 +158,7 @@ struct WgpContext {
 	                          WGPUPrimitiveTopology primitiveTopology = WGPUPrimitiveTopology::WGPUPrimitiveTopology_Undefined,
 	                          WGPUTextureFormat colorTextureFormat = WGPUTextureFormat::WGPUTextureFormat_Undefined,
 	                          WGPUTextureFormat depthTextureFormat = WGPUTextureFormat::WGPUTextureFormat_Undefined,
-	                          WGPUCompareFunction depthCompareFunction = WGPUCompareFunction::WGPUCompareFunction_LessEqual,
+                              WGPUCompareFunction depthCompareFunction = WGPUCompareFunction::WGPUCompareFunction_Undefined,
 	                          PipelineConfiguration configuration = { DEPTH_STENCIL_STATE | BLEND_STATE | FRAGMENT_STATE, ColorMode::WRITE_RGBA, DepthMode::WRITE, StencilMode::DEFAULT, BlendMode::ALPHA_BLENDING, WGPUTextureFormat_Undefined, WGPUCullMode_Undefined, {}, {0, 0.0f, 0.0f} });
 
 
