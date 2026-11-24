@@ -187,13 +187,22 @@ public:
     //
 	//
 	//////////////////////////////////////////////////////////////////
-	const glm::mat4 getTransform() const{
+	glm::mat4 getTransform() const{
 		glm::mat4 transform = glm::translate(glm::mat4(1.0), _dolly);
 		transform = glm::translate(transform, _pan);
 		transform = glm::translate(transform, _centroid);
 		transform *= glm::mat4_cast(_r);
 		transform = glm::translate(transform, -_centroid);
 		return transform;
+	}
+
+	glm::mat4 getInvTransform() const {
+		glm::mat4 inv = glm::translate(glm::mat4(1.0f), _centroid);
+		inv *= glm::mat4_cast(glm::conjugate(_r));
+		inv = glm::translate(inv, -_centroid);
+		inv = glm::translate(inv, -_pan);
+		inv = glm::translate(inv, -_dolly);
+		return inv;
 	}
 
 	//

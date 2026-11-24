@@ -22,7 +22,7 @@ public:
 	~Transform();
 
 	const glm::mat4& getTransformationMatrix() const;
-	const glm::mat4& getInvTransformationMatrix() const;
+	const glm::mat4& getInvTransformationMatrix(bool isScaled = false) const;
 
 	void setPosition(float x, float y, float z);
 	void setPosition(const glm::vec3& position);

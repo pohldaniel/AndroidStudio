@@ -7,6 +7,7 @@
 
 #include <webgpu.h>
 #include <wgpu.h>
+#include "WgpUtils.h"
 
 #define WGPU_STR(str) { str, sizeof(str) - 1 }
 #define STRVIEW(str) WGPUStringView{ str, sizeof(str) - 1 }
@@ -145,22 +146,41 @@ struct WgpContext {
 	friend void wgpPipelineLayoutsRelease();
 	friend void wgpDraw();
 
-	void createComputePipeline(const std::string& shaderModuleName,
-	                           const std::string& entrypoint,
-	                           const std::string& pipelineLayoutName,
-	                           const std::function<std::vector<WGPUBindGroupLayout>()>& onBindGroupLayouts = nullptr);
+    void createComputePipeline(const std::string& shaderModuleName,
+                               const std::string& entrypoint,
+                               const std::string& pipelineLayoutName,
+                               const std::function<std::vector<WGPUBindGroupLayout>()>& onBindGroupLayouts = NULL);
 
-	void createRenderPipeline(const std::string& shaderModuleName,
-	                          const std::string& pipelineLayoutName,
-	                          VertexLayoutSlot vertexLayoutSlot,
-	                          const std::function<std::vector<WGPUBindGroupLayout>()>& onBindGroupLayouts = nullptr,
-	                          uint32_t sampleCount = 1u,
-	                          WGPUPrimitiveTopology primitiveTopology = WGPUPrimitiveTopology::WGPUPrimitiveTopology_Undefined,
-	                          WGPUTextureFormat colorTextureFormat = WGPUTextureFormat::WGPUTextureFormat_Undefined,
-	                          WGPUTextureFormat depthTextureFormat = WGPUTextureFormat::WGPUTextureFormat_Undefined,
+    void createComputePipeline(const std::string& shaderModuleName,
+                               const std::string& entrypoint,
+                               const std::string& pipelineLayoutName,
+                               const std::vector<WGPUBindGroupLayout>& bindGroupLayouts);
+
+    void createRenderPipeline(const std::string& shaderModuleName,
+                              const std::string& pipelineLayoutName,
+                              const VertexLayoutSlot vertexLayoutSlot,
+                              const std::function<std::vector<WGPUBindGroupLayout>()>& onBindGroupLayouts = NULL,
+                              uint32_t msaaSampleCount = 1u,
+                              WGPUPrimitiveTopology primitiveTopology = WGPUPrimitiveTopology::WGPUPrimitiveTopology_Undefined,
+                              WGPUTextureFormat colorTextureFormat = WGPUTextureFormat::WGPUTextureFormat_Undefined,
+                              WGPUTextureFormat depthTextureFormat = WGPUTextureFormat::WGPUTextureFormat_Undefined,
                               WGPUCompareFunction depthCompareFunction = WGPUCompareFunction::WGPUCompareFunction_Undefined,
-	                          PipelineConfiguration configuration = { DEPTH_STENCIL_STATE | BLEND_STATE | FRAGMENT_STATE, ColorMode::WRITE_RGBA, DepthMode::WRITE, StencilMode::DEFAULT, BlendMode::ALPHA_BLENDING, WGPUTextureFormat_Undefined, WGPUCullMode_Undefined, {}, {0, 0.0f, 0.0f} });
+                              PipelineConfiguration configuration = { DEPTH_STENCIL_STATE | BLEND_STATE | FRAGMENT_STATE, ColorMode::WRITE_RGBA, DepthMode::WRITE, StencilMode::DEFAULT, BlendMode::ALPHA_BLENDING, WGPUTextureFormat_Undefined, WGPUCullMode_Undefined, {}, {0, 0.0f, 0.0f} });
 
+    void createRenderPipeline(const std::string& shaderModuleName,
+                              const std::string& pipelineLayoutName,
+                              const VertexLayoutSlot vertexLayoutSlot,
+                              const std::vector<WGPUBindGroupLayout>& bindGroupLayouts,
+                              uint32_t msaaSampleCount = 1u,
+                              WGPUPrimitiveTopology primitiveTopology = WGPUPrimitiveTopology::WGPUPrimitiveTopology_Undefined,
+                              WGPUTextureFormat colorTextureFormat = WGPUTextureFormat::WGPUTextureFormat_Undefined,
+                              WGPUTextureFormat depthTextureFormat = WGPUTextureFormat::WGPUTextureFormat_Undefined,
+                              WGPUCompareFunction depthCompareFunction = WGPUCompareFunction::WGPUCompareFunction_Undefined,
+                              const PipelineConfiguration configuration = { DEPTH_STENCIL_STATE | BLEND_STATE | FRAGMENT_STATE, ColorMode::WRITE_RGBA, DepthMode::WRITE, StencilMode::DEFAULT, BlendMode::ALPHA_BLENDING, WGPUTextureFormat_Undefined, WGPUCullMode_Undefined, {}, {0, 0.0f, 0.0f} });
+
+    WgpBindGroupLayoutBuilder createBindGroupLayout();
+    WgpBindGroupBuilder createRenderBindGroup(const std::string& pipelineName, uint32_t groupIndex = 0u);
+    WgpBindGroupBuilder createComputeBindGroup(const std::string& pipelineName, uint32_t groupIndex = 0u);
 
 	void addSampler(const WGPUSampler& sampler, SamplerSlot samplerSlot);
     const WGPUSampler& getSampler(SamplerSlot samplerSlot) const;

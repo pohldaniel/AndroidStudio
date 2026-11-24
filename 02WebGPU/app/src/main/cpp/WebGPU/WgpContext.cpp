@@ -1151,8 +1151,16 @@ void WgpContext::createComputePipeline(const std::string& shaderModuleName,
                                        const std::string& pipelineLayoutName,
                                        const std::function<std::vector<WGPUBindGroupLayout>()>& onBindGroupLayouts) {
 
-    if (onBindGroupLayouts && !pipelineLayouts.count(pipelineLayoutName)) {
-        std::vector<WGPUBindGroupLayout> bindGroupLayouts = onBindGroupLayouts();
+    std::vector<WGPUBindGroupLayout> layouts = onBindGroupLayouts ? onBindGroupLayouts() : std::vector<WGPUBindGroupLayout>{};
+    createComputePipeline(shaderModuleName, entrypoint, pipelineLayoutName, layouts);
+}
+
+void WgpContext::createComputePipeline(const std::string& shaderModuleName,
+                                       const std::string& entrypoint,
+                                       const std::string& pipelineLayoutName,
+                                       const std::vector<WGPUBindGroupLayout>& bindGroupLayouts) {
+
+    if (!bindGroupLayouts.empty() && !pipelineLayouts.count(pipelineLayoutName)) {
         WGPUPipelineLayoutDescriptor pipelineLayoutDescriptor = {};
         pipelineLayoutDescriptor.bindGroupLayoutCount = bindGroupLayouts.size();
         pipelineLayoutDescriptor.bindGroupLayouts = bindGroupLayouts.data();
@@ -1160,7 +1168,7 @@ void WgpContext::createComputePipeline(const std::string& shaderModuleName,
     }
 
     WGPUComputePipelineDescriptor computePipelineDesc = {};
-    computePipelineDesc.layout = onBindGroupLayouts ? pipelineLayouts.at(pipelineLayoutName) : nullptr;
+    computePipelineDesc.layout = !bindGroupLayouts.empty() ? pipelineLayouts.at(pipelineLayoutName) : nullptr;
     computePipelineDesc.compute.module = shaderModules.at(shaderModuleName);
     computePipelineDesc.compute.entryPoint = { entrypoint.c_str(), entrypoint.size()};
     computePipelineDesc.compute.constantCount = 0u;
@@ -1173,6 +1181,21 @@ void WgpContext::createRenderPipeline(const std::string& shaderModuleName,
                                       const std::string& pipelineLayoutName,
                                       const VertexLayoutSlot vertexLayoutSlot,
                                       const std::function<std::vector<WGPUBindGroupLayout>()>& onBindGroupLayouts,
+                                      uint32_t msaaSampleCount,
+                                      WGPUPrimitiveTopology primitiveTopology,
+                                      WGPUTextureFormat colorTextureFormat,
+                                      WGPUTextureFormat depthTextureFormat,
+                                      WGPUCompareFunction depthCompareFunction,
+                                      const PipelineConfiguration configuration) {
+
+    std::vector<WGPUBindGroupLayout> layouts = onBindGroupLayouts ? onBindGroupLayouts() : std::vector<WGPUBindGroupLayout>{};
+    createRenderPipeline(shaderModuleName, pipelineLayoutName, vertexLayoutSlot, layouts, msaaSampleCount, primitiveTopology, colorTextureFormat, depthTextureFormat, depthCompareFunction, configuration);
+}
+
+void WgpContext::createRenderPipeline(const std::string& shaderModuleName,
+                                      const std::string& pipelineLayoutName,
+                                      const VertexLayoutSlot vertexLayoutSlot,
+                                      const std::vector<WGPUBindGroupLayout>& bindGroupLayouts,
                                       uint32_t sampleCount,
                                       WGPUPrimitiveTopology primitiveTopology,
                                       WGPUTextureFormat colorTextureFormat,
@@ -1180,8 +1203,7 @@ void WgpContext::createRenderPipeline(const std::string& shaderModuleName,
                                       WGPUCompareFunction depthCompareFunction,
                                       PipelineConfiguration configuration) {
 
-    if (onBindGroupLayouts && !pipelineLayouts.count(pipelineLayoutName)) {
-        std::vector<WGPUBindGroupLayout> bindGroupLayouts = onBindGroupLayouts();
+    if (!bindGroupLayouts.empty() && !pipelineLayouts.count(pipelineLayoutName)) {
         WGPUPipelineLayoutDescriptor pipelineLayoutDescriptor = {};
         pipelineLayoutDescriptor.bindGroupLayoutCount = bindGroupLayouts.size();
         pipelineLayoutDescriptor.bindGroupLayouts = bindGroupLayouts.data();
@@ -1235,7 +1257,7 @@ void WgpContext::createRenderPipeline(const std::string& shaderModuleName,
     }
 
     colorTargetStates.push_back({ nullptr, colorTextureFormat == WGPUTextureFormat_Undefined ? colorFormat : colorTextureFormat,
-                                  (configuration.flags & BLEND_STATE) ? &blendState : nullptr,
+                                  (configuration.flags & BLEND_STATE) && IsBlendAble(wgpContext.colorFormat) ? &blendState : nullptr,
                                (configuration.colorMode == ColorMode::WRITE_RGBA) ? WGPUColorWriteMask_All : WGPUColorWriteMask_None });
 
     WGPUFragmentState fragmentState = {};
@@ -1268,7 +1290,7 @@ void WgpContext::createRenderPipeline(const std::string& shaderModuleName,
     depthStencilState.stencilWriteMask = (configuration.stencilMode == StencilMode::SET || configuration.stencilMode == StencilMode::MASK) ? 255u : 0u;
 
     WGPURenderPipelineDescriptor renderPipelineDescriptor = {};
-    renderPipelineDescriptor.layout = onBindGroupLayouts ? pipelineLayouts.at(pipelineLayoutName) : nullptr;
+    renderPipelineDescriptor.layout = !bindGroupLayouts.empty() ? pipelineLayouts.at(pipelineLayoutName) : nullptr;
     renderPipelineDescriptor.multisample.count = sampleCount;
     renderPipelineDescriptor.multisample.mask = ~0u;
     renderPipelineDescriptor.multisample.alphaToCoverageEnabled = WGPUOptionalBool::WGPUOptionalBool_False;
@@ -1283,6 +1305,18 @@ void WgpContext::createRenderPipeline(const std::string& shaderModuleName,
     renderPipelineDescriptor.primitive.cullMode = configuration.cullMode == WGPUCullMode_Undefined ? WGPUCullMode::WGPUCullMode_Back : configuration.cullMode;
 
     renderPipelines[pipelineLayoutName] = wgpuDeviceCreateRenderPipeline(device, &renderPipelineDescriptor);
+}
+
+WgpBindGroupLayoutBuilder WgpContext::createBindGroupLayout() {
+    return WgpBindGroupLayoutBuilder(wgpContext.device);
+}
+
+WgpBindGroupBuilder WgpContext::createRenderBindGroup(const std::string& pipelineName, uint32_t groupIndex) {
+    return WgpBindGroupBuilder(wgpContext.device, wgpuRenderPipelineGetBindGroupLayout(wgpContext.renderPipelines.at(pipelineName), groupIndex));
+}
+
+WgpBindGroupBuilder WgpContext::createComputeBindGroup(const std::string& pipelineName, uint32_t groupIndex) {
+    return WgpBindGroupBuilder(wgpContext.device, wgpuComputePipelineGetBindGroupLayout(wgpContext.computePipelines.at(pipelineName), groupIndex));
 }
 
 bool WgpContext::IsBlendAble(WGPUTextureFormat textureFormat) {

@@ -6,5 +6,5 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -Wall")
 set(WEBGPU_SOURCES WgpTexture.cpp WgpBuffer.cpp WgpMesh.cpp WgpModel.cpp WgpBatchRenderer.cpp WgpRenderer.cpp WgpContext.cpp)
 add_library(webgpu STATIC ${WEBGPU_SOURCES})
 
-set(WEBGPU_HEADERS WgpTexture.h WgpBuffer.h WgpMesh.h WgpModel.h WgpBatchRenderer.h WgpRenderer.h WgpData.h WgpContext.h)
+set(WEBGPU_HEADERS WgpTexture.h WgpBuffer.h WgpMesh.h WgpModel.h WgpBatchRenderer.h WgpRenderer.h WgpData.h WgpUtils.h WgpContext.h)
 target_include_directories(webgpu PRIVATE ${WEBGPU_HEADERS})
